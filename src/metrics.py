@@ -1,6 +1,6 @@
 from pm4py.objects.petri_net.obj import PetriNet
 
-def metrics(petri: PetriNet):
+def get_metrics(petri: PetriNet):
 
     # basic metrics
     n_places = len(petri.places)
@@ -43,15 +43,15 @@ def get_joins_splits(arcs):
     # count joins and splits
     for i in splits.values():
         if len(i) > 1: n_splits+=1
-        
+
     for i in joins.values():
         if len(i) > 1: n_joins+=1
 
     return (n_splits, n_joins)
 
 if __name__ == "__main__":
-
 ## TESTING
+
     from pm4py.objects.log.importer.xes import importer as xes_importer
     from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
     from pm4py.visualization.petri_net import visualizer as pn_visualizer
@@ -65,4 +65,13 @@ if __name__ == "__main__":
     gviz = pn_visualizer.apply(net, initial_marking, final_marking)
     pn_visualizer.view(gviz)
 
-    print(metrics(net))
+    metrics =  get_metrics(net)
+
+    print("\n### METRICS ###")
+    print(f"nº of places:               {metrics[0]}")
+    print(f"nº of arcs:                 {metrics[1]}")
+    print(f"nº of transitions:          {metrics[2]}")
+    print(f"cyclomatic complexity       {metrics[3]}")
+    print(f"ratio places/transitions    {metrics[4]}")
+    print(f"nº of joins:                {metrics[5]}")
+    print(f"nº of splits:               {metrics[6]}\n")
