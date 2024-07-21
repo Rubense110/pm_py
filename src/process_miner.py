@@ -16,7 +16,6 @@ class Process_miner:
     def __init__(self, miner_type, log, conformance):
         self.miner = self.__get_miner_alg(miner_type)
         self.log = log
-        self.conformance_type = conformance
         self.params = self.__init_params(miner_type)
 
     def __get_miner_alg(self, miner):
@@ -41,4 +40,4 @@ class Process_miner:
 
 
 if __name__ == "__main__":
-    pass
+        net, im, fm = self.miner.apply(event_log, **params)
