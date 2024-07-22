@@ -29,17 +29,13 @@ class Process_miner:
             params = parameters.base_heu_params
         return params
 
-    def __update_params(self, miner_type, **kwargs):
-        if miner_type== 'heuristic':
-            params = {param.value: kwargs.get(param.value, None) for param in HeuristicsParameters}
-        else:
-            raise ValueError(f"Unsupported miner type: {miner_type}")
-        return params
 
     def discover(self):
-        optimize.genetics(self.miner, self.log, self.params)
 
+        gen_problem = optimize.Opt_problem(self.miner, self.log, self.params)
+        gen_problem.discover_genetics()
 
+## TESTING
 if __name__ == "__main__":
         
     from pm4py.objects.log.importer.xes import importer as xes_importer

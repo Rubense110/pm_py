@@ -1,5 +1,6 @@
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
 
+# Heuristic miner default params to begin discovery
 base_heu_params = {
     HeuristicsParameters.DEPENDENCY_THRESH.value: 0.5,
     HeuristicsParameters.AND_MEASURE_THRESH.value: 0.65,
@@ -9,6 +10,7 @@ base_heu_params = {
     HeuristicsParameters.LOOP_LENGTH_TWO_THRESH.value: 0.5,
 }
 
+# range of posible values for the parameters of the heurisic miner
 heu_param_range = {
     HeuristicsParameters.DEPENDENCY_THRESH : [0, 1],
     HeuristicsParameters.AND_MEASURE_THRESH : [0, 1],

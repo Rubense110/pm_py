@@ -1,6 +1,9 @@
 from pm4py.objects.petri_net.obj import PetriNet
+import numpy as np
 
-def get_metrics(petri: PetriNet):
+N_BASE_METRICS = 7
+
+def get_base_metrics(petri: PetriNet):
 
     # basic metrics
     n_places = len(petri.places)
@@ -17,7 +20,7 @@ def get_metrics(petri: PetriNet):
     joins, splits = get_joins_splits(petri.arcs)
 
     # -joins & -splits if Maximize, joins & splits if Minimize
-    return [n_places, n_arcs, n_transitions, cycl_complx, ratio, joins, splits]
+    return np.array([n_places, n_arcs, n_transitions, cycl_complx, ratio, joins, splits]) 
 
 def get_joins_splits(arcs):
 
@@ -49,8 +52,8 @@ def get_joins_splits(arcs):
 
     return (n_splits, n_joins)
 
-if __name__ == "__main__":
 ## TESTING
+if __name__ == "__main__":
 
     from pm4py.objects.log.importer.xes import importer as xes_importer
     from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
@@ -65,7 +68,7 @@ if __name__ == "__main__":
     gviz = pn_visualizer.apply(net, initial_marking, final_marking)
     pn_visualizer.view(gviz)
 
-    metrics =  get_metrics(net)
+    metrics =  get_base_metrics(net)
 
     print("\n### METRICS ###")
     print(f"nº of places:               {metrics[0]}")
