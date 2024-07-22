@@ -3,7 +3,8 @@
 import pm4py
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
 
-import params
+import parameters
+import optimize
 
 class Process_miner:
 
@@ -13,9 +14,9 @@ class Process_miner:
         #'alpha': pm4py.algo.discovery.alpha
     }
 
-    def __init__(self, miner_type, log, conformance):
+    def __init__(self, miner_type, log):
         self.miner = self.__get_miner_alg(miner_type)
-        self.log = log
+        self.log = pm4py.read_xes(self.log)
         self.params = self.__init_params(miner_type)
 
     def __get_miner_alg(self, miner):
@@ -25,7 +26,8 @@ class Process_miner:
     
     def __init_params(self, miner_type):
         if miner_type== 'heuristic':
-            params = params.base_heu_params
+            params = parameters.base_heu_params
+        return params
 
     def __update_params(self, miner_type, **kwargs):
         if miner_type== 'heuristic':
@@ -35,9 +37,14 @@ class Process_miner:
         return params
 
     def discover(self):
-        event_log =  pm4py.read_xes(self.log)
-        net, im, fm = self.miner.apply(event_log, **params)
+        optimize.genetics(self.miner, self.log, self.params)
 
 
 if __name__ == "__main__":
-        net, im, fm = self.miner.apply(event_log, **params)
+        
+    from pm4py.objects.log.importer.xes import importer as xes_importer
+
+
+    log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
+    pm = Process_miner('heuristic', log)
+    print(pm.params)

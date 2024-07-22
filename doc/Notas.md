@@ -68,20 +68,7 @@ todos requieren:
 	- - **alpha** (`float`) – noise threshold for the sequence encoding graph (1.0=no filtering, 0.0=greatest filtering)
 	- 
 
+### Parametros Heuristic
 
-
-
-**fitness**:
-- token based -> [`pm4py.conformance.fitness_token_based_replay()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.fitness_token_based_replay "pm4py.conformance.fitness_token_based_replay")
-- alignments -> [`pm4py.conformance.fitness_alignments()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.fitness_alignments "pm4py.conformance.fitness_alignments")
-- footprints -> [`pm4py.conformance.fitness_footprints()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.fitness_footprints "pm4py.conformance.fitness_footprints")
-
-**Precission**:
-- token based -> [`pm4py.conformance.precision_token_based_replay()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.precision_token_based_replay "pm4py.conformance.precision_token_based_replay")
-- alignments -> [`pm4py.conformance.precision_alignments()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.precision_alignments "pm4py.conformance.precision_alignments")
-- footprints -> [`pm4py.conformance.precision_footprints()`](https://pm4py.fit.fraunhofer.de/static/assets/api/2.7.11/pm4py.html#pm4py.conformance.precision_footprints "pm4py.conformance.precision_footprints")
-
-**Complexity**:
-
-
-**Optimizacion**:
+Papers
+- Heuristic Mining: Adaptive Process Simplification in Education
