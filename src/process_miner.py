@@ -4,7 +4,7 @@ import pm4py
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
 
 import parameters
-import optimize
+import optimize_pyGAD
 
 class Process_miner:
 
@@ -32,7 +32,7 @@ class Process_miner:
 
     def discover(self):
 
-        gen_problem = optimize.Opt_problem(self.miner, self.log, self.params)
+        gen_problem = optimize_pyGAD.Opt_problem(self.miner, self.log, self.params)
         gen_problem.discover_genetics()
 
 ## TESTING

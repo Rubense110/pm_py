@@ -1,3 +1,11 @@
 - Inductive Params
 - Inductive & Heuristic Param range
 - Optimize.py (genetics first)
+
+
+
+---
+
+- Tuning parametros minero con ML
+    - GridSearch, randomsearch, BayesianSearch
+- Cambiar a Jmetal

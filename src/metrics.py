@@ -2,6 +2,7 @@ from pm4py.objects.petri_net.obj import PetriNet
 import numpy as np
 
 N_BASE_METRICS = 7
+LABELS_BASE_METRICS = ['n_places', 'n_arcs', 'n_transitions', 'cycl_complx', 'ratio', 'joins', 'splits']
 
 def get_base_metrics(petri: PetriNet):
 

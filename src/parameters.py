@@ -19,3 +19,16 @@ heu_param_range = {
     HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: [0, 1],
     HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
 }
+
+heu_param_type = {
+    HeuristicsParameters.DEPENDENCY_THRESH : float,
+    HeuristicsParameters.AND_MEASURE_THRESH : float,
+    HeuristicsParameters.MIN_ACT_COUNT: int,
+    HeuristicsParameters.MIN_DFG_OCCURRENCES: int,
+    HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: float,
+    HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: float
+}
+
+
+if __name__ == "__main__":
+    print([i[1] for i in heu_param_range.values()])
