@@ -10,13 +10,14 @@ from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 
 class PM_miner_problem(FloatProblem):
 
-    def __init__(self, miner, log, metrics_func):
+    def __init__(self, miner, log, metrics_func, parameters_info):
         
         super(PM_miner_problem, self).__init__()
 
-        self.miner = miner                 # pm4py miner e.g. heuristic_miner
-        self.log = log                     # XES log (already loaded by pm4py)
-        self.metrics_func = metrics_func   # How to calculate fitness
+        self.miner = miner                       # pm4py miner e.g. heuristic_miner
+        self.log = log                           # XES log (already loaded by pm4py)
+        self.metrics_func = metrics_func         # How to calculate fitness
+        self.parameters_info = parameters_info   # Miner pararameters (selected automatically)
 
         self.number_of_objectives = metrics.N_BASE_METRICS
         self.number_of_variables = self.__get_n_genes()
@@ -30,19 +31,19 @@ class PM_miner_problem(FloatProblem):
     # Determines the value range for the parameters of the specified miner
     def __get_bounds(self):
         if self.miner == heuristics_miner:
-            lower_bound = [i[0] for i in parameters.heu_param_range.values()]
-            upper_bound = [i[1] for i in parameters.heu_param_range.values()]
+            lower_bound = [i[0] for i in self.parameters_info.param_range.values()]
+            upper_bound = [i[1] for i in self.parameters_info.param_range.values()]
         else: pass
 
         return lower_bound, upper_bound
     
     def __get_n_genes(self):
         if self.miner == heuristics_miner:
-            return len(parameters.heu_param_range)
+            return len(self.parameters_info.param_range)
         
     def evaluate(self, solution: FloatSolution) -> FloatSolution :
         print(solution)
-        params = {key: solution.objectives[idx] for idx, key in enumerate(parameters.heu_param_range.keys())}
+        params = {key: solution.objectives[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
         petri, _, _ = self.miner.apply(self.log, parameters= params)
         solution.objectives = self.metrics_func(petri)
         
@@ -56,7 +57,7 @@ class PM_miner_problem(FloatProblem):
         
         # Random Solution
         random_sol = list()
-        for i in parameters.heu_param_type.values():
+        for i in self.parameters_info.param_range.values():
             if i == int: 
                 random_sol.append(random.randint(self.lower_bound[0], self.upper_bound[1]))
             else:
@@ -80,7 +81,15 @@ class PM_miner_problem(FloatProblem):
 class Opt_NSGAII():
      
     def __init__(self, miner, log, metrics_func):
-        self.problem = PM_miner_problem(miner, log, metrics_func)
+        self.parameters_info = self.__get_parameters(miner)
+        self.problem = PM_miner_problem(miner, log, metrics_func, self.parameters_info)
+        
+
+    def __get_parameters(self, miner):
+        if miner == heuristics_miner:
+            return parameters.Heuristic_Parameters
+        else:
+            raise ValueError(f"Miner '{miner}' not supported. Available miners are: Heuristic, Inductive")
 
     def discover(self, pop_size, off_pop_size, mutation, crossover, termination_criterion):
         
@@ -101,14 +110,15 @@ class Opt_NSGAII():
     def get_petri_net(self):
         best_solution = self.get_best_solution()
         print(best_solution)
-        params = {key: best_solution.variables[idx] for idx, key in enumerate(parameters.heu_param_range.keys())}
+        params = {key: best_solution.variables[idx] for idx, key in enumerate(self.parameters.param_range.keys())}
 
-        # Minar el registro con los parámetros asignados
         petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
         return petri_net, initial_marking, final_marking
     
-
+    
+## Testing
 if __name__ == "__main__":
+
     from pm4py.objects.log.importer.xes import importer as xes_importer
     from pm4py.visualization.petri_net import visualizer as pn_visualizer
     from jmetal.operator.crossover import SBXCrossover
