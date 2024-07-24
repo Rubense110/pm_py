@@ -10,23 +10,23 @@ from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 
 class PM_miner_problem(FloatProblem):
 
-    def __init__(self, miner, log, metrics_func, parameters_info):
+    def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info):
         
         super(PM_miner_problem, self).__init__()
 
         self.miner = miner                       # pm4py miner e.g. heuristic_miner
         self.log = log                           # XES log (already loaded by pm4py)
-        self.metrics_func = metrics_func         # How to calculate fitness
+        self.metrics_obj = metrics_obj           # How to calculate fitness
         self.parameters_info = parameters_info   # Miner pararameters (selected automatically)
 
-        self.number_of_objectives = metrics.N_BASE_METRICS
+        self.number_of_objectives = metrics_obj.get_n_of_metrics()
         self.number_of_variables = self.__get_n_genes()
         self.number_of_constraints = 0
 
         self.lower_bound, self.upper_bound = self.__get_bounds()
 
         #self.obj_directions = [self.MINIMIZE]
-        self.obj_labels = metrics.LABELS_BASE_METRICS
+        self.obj_labels = metrics_obj.get_labels()
 
     # Determines the value range for the parameters of the specified miner
     def __get_bounds(self):
@@ -45,7 +45,7 @@ class PM_miner_problem(FloatProblem):
         print(solution)
         params = {key: solution.objectives[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
         petri, _, _ = self.miner.apply(self.log, parameters= params)
-        solution.objectives = self.metrics_func(petri)
+        solution.objectives = self.metrics_obj.get_metrics_array(petri)
         
         return solution
 
@@ -80,9 +80,9 @@ class PM_miner_problem(FloatProblem):
 
 class Opt_NSGAII():
      
-    def __init__(self, miner, log, metrics_func):
+    def __init__(self, miner, log, metrics_obj):
         self.parameters_info = self.__get_parameters(miner)
-        self.problem = PM_miner_problem(miner, log, metrics_func, self.parameters_info)
+        self.problem = PM_miner_problem(miner, log, metrics_obj, self.parameters_info)
         
 
     def __get_parameters(self, miner):
@@ -110,7 +110,7 @@ class Opt_NSGAII():
     def get_petri_net(self):
         best_solution = self.get_best_solution()
         print(best_solution)
-        params = {key: best_solution.variables[idx] for idx, key in enumerate(self.parameters.param_range.keys())}
+        params = {key: best_solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
 
         petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
         return petri_net, initial_marking, final_marking
@@ -128,8 +128,9 @@ if __name__ == "__main__":
     max_evaluations = 100
 
     log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
+    metrics_obj = metrics.Basic_Metrics()
 
-    opt = Opt_NSGAII(heuristics_miner, log, metrics.get_base_metrics)
+    opt = Opt_NSGAII(heuristics_miner, log, metrics_obj)
     opt.discover(pop_size=100,
                  off_pop_size=100,
                  mutation = PolynomialMutation(probability=1.0 / opt.problem.number_of_variables, distribution_index=20),
