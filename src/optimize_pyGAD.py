@@ -5,6 +5,8 @@ import numpy as np
 import pygad
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 
+### DEPRECATED - Does not work ###
+
 class Opt_problem():
     
     fitness = np.array([])
