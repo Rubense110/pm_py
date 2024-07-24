@@ -6,6 +6,8 @@ import random
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from jmetal.core.problem import FloatProblem, FloatSolution
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
+from jmetal.util.solution import get_non_dominated_solutions
+
 
 
 class PM_miner_problem(FloatProblem):
@@ -42,11 +44,12 @@ class PM_miner_problem(FloatProblem):
             return len(self.parameters_info.param_range)
         
     def evaluate(self, solution: FloatSolution) -> FloatSolution :
-        print(solution)
-        params = {key: solution.objectives[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
+        
+        params = {key: solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
         petri, _, _ = self.miner.apply(self.log, parameters= params)
         solution.objectives = self.metrics_obj.get_metrics_array(petri)
-        
+        solution.number_of_objectives = self.number_of_objectives
+        #print(solution)
         return solution
 
     def create_solution(self) -> FloatSolution:
@@ -102,6 +105,7 @@ class Opt_NSGAII():
         
         self.algorithm.run()
         self.result = self.algorithm.result()
+        self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
         return self.result
     
     def get_best_solution(self):
@@ -115,6 +119,8 @@ class Opt_NSGAII():
         petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
         return petri_net, initial_marking, final_marking
     
+    def get_non_dominated_sols(self):
+        return self.non_dom_sols
     
 ## Testing
 if __name__ == "__main__":
@@ -124,6 +130,8 @@ if __name__ == "__main__":
     from jmetal.operator.crossover import SBXCrossover
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
+    from jmetal.lab.visualization import Plot
+
 
     max_evaluations = 100
 
@@ -141,4 +149,10 @@ if __name__ == "__main__":
 
     # visualize petri net
     gviz = pn_visualizer.apply(optimal_petri_net, initial_marking, final_marking)
-    pn_visualizer.view(gviz)
+    #pn_visualizer.view(gviz)
+
+    front = opt.get_non_dominated_sols()
+    
+
+    plot_front = Plot(title='Pareto front approximation', axis_labels=['x', 'y', 'z', 'a', 'b', 'c', 'd'])
+    plot_front.plot(front, label='NSGAII-ZDT1', filename='NSGAII-ZDT1', format='png')
