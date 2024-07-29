@@ -1,8 +1,10 @@
 TODO
 
 - Inductive Params
-- Inductive & Heuristic Param range
-- process_miner.py 
+- Inductive Param range
+- process_miner.py
+    - Improve verbosity
+    - Exception control
 
 ---
 

@@ -4,6 +4,7 @@ import parameters
 import numpy as np
 import random
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from jmetal.core.problem import FloatProblem, FloatSolution
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal.util.solution import get_non_dominated_solutions
@@ -106,8 +107,10 @@ class Opt_NSGAII():
         self.algorithm.run()
         self.result = self.algorithm.result()
         self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
+
+    def get_result(self):
         return self.result
-    
+        
     def get_best_solution(self):
         return self.result[0]  # TO-DO
 
@@ -122,6 +125,13 @@ class Opt_NSGAII():
     def get_non_dominated_sols(self):
         return self.non_dom_sols
     
+    def plot_pareto_front(self, title, label, filename, format):
+
+        front = self.get_non_dominated_sols()
+        plot_front = Plot(title=title, axis_labels=metrics_obj.get_labels())
+        plot_front.plot(front, label=label, filename=filename, format=format)
+
+    
 ## Testing
 if __name__ == "__main__":
 
@@ -133,7 +143,7 @@ if __name__ == "__main__":
     from jmetal.lab.visualization import Plot
 
 
-    max_evaluations = 100
+    max_evaluations = 1000
 
     log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
     metrics_obj = metrics.Basic_Metrics()
@@ -149,10 +159,7 @@ if __name__ == "__main__":
 
     # visualize petri net
     gviz = pn_visualizer.apply(optimal_petri_net, initial_marking, final_marking)
-    #pn_visualizer.view(gviz)
+    pn_visualizer.view(gviz)
 
-    front = opt.get_non_dominated_sols()
-    
-
-    plot_front = Plot(title='Pareto front approximation', axis_labels=['x', 'y', 'z', 'a', 'b', 'c', 'd'])
-    plot_front.plot(front, label='NSGAII-ZDT1', filename='NSGAII-ZDT1', format='png')
+    # plot Pareto front
+    opt.plot_pareto_front(title='Pareto front approximation', label='NSGAII-Pareto-Closed', filename='NSGAII-Pareto-Closed', format='png')
