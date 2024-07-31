@@ -8,6 +8,7 @@ from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from jmetal.core.problem import FloatProblem, FloatSolution
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal.util.solution import get_non_dominated_solutions
+from jmetal.lab.visualization import Plot
 
 
 
@@ -50,22 +51,22 @@ class PM_miner_problem(FloatProblem):
         petri, _, _ = self.miner.apply(self.log, parameters= params)
         solution.objectives = self.metrics_obj.get_metrics_array(petri)
         solution.number_of_objectives = self.number_of_objectives
-        #print(solution)
+        
         return solution
 
     def create_solution(self) -> FloatSolution:
         new_solution = FloatSolution(number_of_constraints=self.number_of_constraints,
                                      number_of_objectives=self.number_of_objectives,
                                      lower_bound = self.lower_bound,
-                                     upper_bound = self.upper_bound)
-        
+                                     upper_bound = self.upper_bound)   
         # Random Solution
         random_sol = list()
-        for i in self.parameters_info.param_range.values():
-            if i == int: 
-                random_sol.append(random.randint(self.lower_bound[0], self.upper_bound[1]))
+        for i,j in enumerate(self.parameters_info.param_type.values()):
+            if j == int: 
+                random_sol.append(random.randint(self.lower_bound[i], self.upper_bound[i]))
             else:
-                random_sol.append(random.uniform(self.lower_bound[0], self.upper_bound[1]))
+                random_sol.append(random.uniform(self.lower_bound[i], self.upper_bound[i]))
+
 
         new_solution.variables = random_sol
         return new_solution
@@ -85,27 +86,32 @@ class PM_miner_problem(FloatProblem):
 class Opt_NSGAII():
      
     def __init__(self, miner, log, metrics_obj):
-        self.parameters_info = self.__get_parameters(miner)
+        self.parameters_info = self.__get_parameters(miner, log)
         self.problem = PM_miner_problem(miner, log, metrics_obj, self.parameters_info)
         
 
-    def __get_parameters(self, miner):
+    def __get_parameters(self, miner, log):
         if miner == heuristics_miner:
-            return parameters.Heuristic_Parameters
+            params = parameters.Heuristic_Parameters()
+            params.adjust_heu_params(log)
+            return params
         else:
             raise ValueError(f"Miner '{miner}' not supported. Available miners are: Heuristic, Inductive")
 
-    def discover(self, pop_size, off_pop_size, mutation, crossover, termination_criterion):
-        
-        self.algorithm = NSGAII(problem= self.problem,
-                                population_size=pop_size,
-                                offspring_population_size = off_pop_size,
-                                mutation = mutation,
-                                crossover = crossover,
-                                termination_criterion = termination_criterion)
+    def __show_result(self):
+        print("\n### RESULT ###\n")
+        for (i,j)in enumerate(self.result):
+            print("Solution ",i," :")
+            print("     variables: ",j.variables)
+            print("     objectives:",j.objectives.tolist(),"\n")
+        print("\n##############\n")
+
+    def discover(self, **params):
+        self.algorithm = NSGAII(problem= self.problem,**params)
         
         self.algorithm.run()
         self.result = self.algorithm.result()
+        self.__show_result()
         self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
 
     def get_result(self):
@@ -116,7 +122,9 @@ class Opt_NSGAII():
 
     def get_petri_net(self):
         best_solution = self.get_best_solution()
+        print("\n### Best Solution ###\n")
         print(best_solution)
+        print("\n#####################\n")
         params = {key: best_solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
 
         petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
@@ -128,7 +136,7 @@ class Opt_NSGAII():
     def plot_pareto_front(self, title, label, filename, format):
 
         front = self.get_non_dominated_sols()
-        plot_front = Plot(title=title, axis_labels=metrics_obj.get_labels())
+        plot_front = Plot(title=title, axis_labels=self.problem.metrics_obj.get_labels())
         plot_front.plot(front, label=label, filename=filename, format=format)
 
     
@@ -140,7 +148,7 @@ if __name__ == "__main__":
     from jmetal.operator.crossover import SBXCrossover
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
-    from jmetal.lab.visualization import Plot
+
 
 
     max_evaluations = 1000

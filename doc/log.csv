@@ -1,0 +1,2 @@
+Timestamp, Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution
+[2024/07/31 - 14:02:59];6218.009090900421;BPI_Challenge_2012.xes;heuristic;NSGA-II;{'population_size': 100, 'offspring_population_size': 100, 'mutation': {'probability': 0.16666666666666666, 'distribution_index': 20}, 'crossover': {'probability': 1.0, 'distribution_index': 20}, 'termination_criterion': {'max_evaluations': 10000, 'evaluations': 10000}};basic;[0.9540982738419803, 0.2508043324982947, 54840, 6, 0.5955936914151069, 0.2527341338040353]

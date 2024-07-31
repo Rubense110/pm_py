@@ -1,4 +1,5 @@
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
+import pm4py
 
 class Heuristic_Parameters():
 
@@ -17,10 +18,12 @@ class Heuristic_Parameters():
         HeuristicsParameters.DEPENDENCY_THRESH : [0, 1],
         HeuristicsParameters.AND_MEASURE_THRESH : [0, 1],
         HeuristicsParameters.MIN_ACT_COUNT: [1, 1000],
-        HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 1000],
+        HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 10],
         HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: [0, 1],
         HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
     }
+
+#    [0.9997896792467974, 0.8672423645658718, 0.9474892596581139, 0.46234702286865903, 0.6449204674954552, 0.4588659015710691]
 
     param_type = {
         HeuristicsParameters.DEPENDENCY_THRESH : float,
@@ -30,3 +33,14 @@ class Heuristic_Parameters():
         HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: float,
         HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: float
     }
+
+    def adjust_heu_params(self, log):
+        log = pm4py.convert_to_dataframe(log)
+
+        max_activity_count = log['concept:name'].value_counts().max()
+        #min_activity_count = log['concept:name'].value_counts().min()
+
+        self.param_range[HeuristicsParameters.MIN_ACT_COUNT] = [0, max_activity_count]
+        #self.param_range[HeuristicsParameters.MIN_DFG_OCCURRENCES] = [min_activity_count, max_activity_count]
+
+        #print(self.param_range)

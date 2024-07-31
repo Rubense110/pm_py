@@ -1,16 +1,19 @@
 # activate venv -> .\.venv\Scripts\activate
 
-import pm4py
-from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
-import parameters
+import time
+import os
+
 import optimize_Jmetal
-import optimize_pyGAD
+#import optimize_pyGAD
 import metrics 
 
 class Process_miner:
+
+    log_file = 'doc/log.csv'
 
     miner_mapping = {
         #'inductive': pm4py.algo.discovery.inductive,
@@ -22,22 +25,25 @@ class Process_miner:
     }
 
     def __init__(self, miner_type, opt_type, metrics,  log):
+
+        self.miner_type = miner_type
+        self.opt_type = opt_type
+        self.metrics_type = metrics
+        self.log_name = os.path.basename(log)
+
         self.miner = self.__get_miner_alg(miner_type)
-        self.log = log
-        self.params = self.__init_params(miner_type)
+        self.log = xes_importer.apply(log)
         self.metrics_obj = self.__get_metrics_type(metrics)
 
         self.opt = self.__get_opt_type(opt_type)
+
+        self.local_time = time.strftime("[%Y/%m/%d - %H:%M:%S]", time.localtime())
+        self.star_time = time.time()
 
     def __get_miner_alg(self, miner):
         if miner not in self.miner_mapping:
             raise ValueError(f"Minero '{miner}' no está soportado. Los mineros disponibles son: {list(self.miner_mapping.keys())}")
         return self.miner_mapping[miner]
-    
-    def __init_params(self, miner_type):
-        if miner_type== 'heuristic':
-            params = parameters.Heuristic_Parameters.base_params
-        return params
 
     def __get_metrics_type(self, metrics):
         if metrics not in self.metrics_mapping:
@@ -50,31 +56,54 @@ class Process_miner:
         else: raise ValueError(f'Optimizador {opt_type} no soportado o es incorrecto')
         return opt
     
-    def discover(self, **params):
-        return self.opt.discover(**params)
-        
+    def __log(self):
+        if os.path.isfile(self.log_file):
+            with open(self.log_file, 'a') as log:
+                runtime = str(self.end_time - self.star_time)
+                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.__extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
+        else:
+            with open(self.log_file, 'w') as log:
+                log.write('Timestamp, Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
+            self.__log()
 
+    def __extract_params(self):
+        dicc = dict()
+        for (attr_name, attr_value) in self.params.items():
+            if hasattr(attr_value, '__dict__'):
+                dicc[attr_name] = attr_value.__dict__
+            else:
+                dicc[attr_name] = attr_value
+        return dicc
+
+    def discover(self, **params):
+        self.params = params
+        disc = self.opt.discover(**params)
+        self.end_time = time.time()
+        self.__log()
+        return disc
+                
 ## TESTING
 if __name__ == "__main__":
         
-    from pm4py.objects.log.importer.xes import importer as xes_importer
     from pm4py.visualization.petri_net import visualizer as pn_visualizer
     from jmetal.operator.crossover import SBXCrossover
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
-    from jmetal.lab.visualization import Plot
 
 
-    max_evaluations = 1000
 
-    log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
+    max_evaluations = 10000
+
+    #log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
+    log = 'test/Financial/BPI_Challenge_2012.xes'
+    
     p_miner = Process_miner(miner_type='heuristic',
                             opt_type='NSGA-II',
                             metrics='basic',
                             log = log)
     
-    p_miner.discover(pop_size=100,
-                     off_pop_size=100,
+    p_miner.discover(population_size=100,
+                     offspring_population_size=100,
                      mutation = PolynomialMutation(probability=1.0 / p_miner.opt.problem.number_of_variables, distribution_index=20),
                      crossover = SBXCrossover(probability=1.0, distribution_index=20),
                      termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
