@@ -14,7 +14,9 @@ from jmetal.lab.visualization import Plot
 
 class PM_miner_problem(FloatProblem):
 
-    def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info):
+    current_iteration = 0
+
+    def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info, verbose):
         
         super(PM_miner_problem, self).__init__()
 
@@ -22,6 +24,7 @@ class PM_miner_problem(FloatProblem):
         self.log = log                           # XES log (already loaded by pm4py)
         self.metrics_obj = metrics_obj           # How to calculate fitness
         self.parameters_info = parameters_info   # Miner pararameters (selected automatically)
+        self.verbose = verbose                   # more vebosity == more runtime
 
         self.number_of_objectives = metrics_obj.get_n_of_metrics()
         self.number_of_variables = self.__get_n_genes()
@@ -46,7 +49,9 @@ class PM_miner_problem(FloatProblem):
             return len(self.parameters_info.param_range)
         
     def evaluate(self, solution: FloatSolution) -> FloatSolution :
-        
+        if self.verbose == 1:
+            print(f'Iteracion: {self.current_iteration}', end='\r')
+            self.current_iteration+=1
         params = {key: solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
         petri, _, _ = self.miner.apply(self.log, parameters= params)
         solution.objectives = self.metrics_obj.get_metrics_array(petri)
@@ -85,9 +90,9 @@ class PM_miner_problem(FloatProblem):
 
 class Opt_NSGAII():
      
-    def __init__(self, miner, log, metrics_obj):
+    def __init__(self, miner, log, metrics_obj, verbose):
         self.parameters_info = self.__get_parameters(miner, log)
-        self.problem = PM_miner_problem(miner, log, metrics_obj, self.parameters_info)
+        self.problem = PM_miner_problem(miner, log, metrics_obj, self.parameters_info, verbose)
         
 
     def __get_parameters(self, miner, log):

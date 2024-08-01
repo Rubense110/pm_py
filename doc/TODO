@@ -3,10 +3,13 @@ TODO
 - Inductive Params
 - Inductive Param range
 - process_miner.py
-    - Improve verbosity
+    - Improve verbosity -> current iteration
     - Exception control
 
 - Pipeline Log
+    - store all results in a folder
+
+Clustering and Canonical.
 
 ---
 

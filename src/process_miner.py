@@ -24,12 +24,13 @@ class Process_miner:
         'basic': metrics.Basic_Metrics()
     }
 
-    def __init__(self, miner_type, opt_type, metrics,  log):
+    def __init__(self, miner_type, opt_type, metrics,  log, verbose):
 
         self.miner_type = miner_type
         self.opt_type = opt_type
         self.metrics_type = metrics
         self.log_name = os.path.basename(log)
+        self.verbose = verbose
 
         self.miner = self.__get_miner_alg(miner_type)
         self.log = xes_importer.apply(log)
@@ -52,7 +53,7 @@ class Process_miner:
 
     def __get_opt_type(self, opt_type):
         if opt_type == 'NSGA-II': 
-            opt = optimize_Jmetal.Opt_NSGAII(self.miner, self.log, self.metrics_obj)
+            opt = optimize_Jmetal.Opt_NSGAII(self.miner, self.log, self.metrics_obj, self.verbose)
         else: raise ValueError(f'Optimizador {opt_type} no soportado o es incorrecto')
         return opt
     
@@ -60,10 +61,10 @@ class Process_miner:
         if os.path.isfile(self.log_file):
             with open(self.log_file, 'a') as log:
                 runtime = str(self.end_time - self.star_time)
-                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.__extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
+                log.write(f'\n{self.local_time};{self.verbose};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.__extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
         else:
             with open(self.log_file, 'w') as log:
-                log.write('Timestamp, Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
+                log.write('Timestamp, Verbosity, Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
             self.__log()
 
     def __extract_params(self):
@@ -92,15 +93,16 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 10000
+    max_evaluations = 1000
 
-    #log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
-    log = 'test/Financial/BPI_Challenge_2012.xes'
+    log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
+    #log = 'test/Financial/BPI_Challenge_2012.xes'
     
     p_miner = Process_miner(miner_type='heuristic',
                             opt_type='NSGA-II',
                             metrics='basic',
-                            log = log)
+                            log = log, 
+                            verbose=0)
     
     p_miner.discover(population_size=100,
                      offspring_population_size=100,
@@ -116,4 +118,4 @@ if __name__ == "__main__":
     pn_visualizer.view(gviz)
 
     # plot Pareto front
-    p_miner.opt.plot_pareto_front(title='Pareto front approximation', label='NSGAII-Pareto-Closed', filename='NSGAII-Pareto-Closed', format='png')
+    p_miner.opt.plot_pareto_front(title='Pareto front approximation', label=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', filename=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', format='png')
