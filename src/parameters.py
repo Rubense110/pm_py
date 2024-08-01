@@ -18,7 +18,7 @@ class Heuristic_Parameters():
         HeuristicsParameters.DEPENDENCY_THRESH : [0, 1],
         HeuristicsParameters.AND_MEASURE_THRESH : [0, 1],
         HeuristicsParameters.MIN_ACT_COUNT: [1, 1000],
-        HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 10],
+        HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 1000],
         HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: [0, 1],
         HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
     }

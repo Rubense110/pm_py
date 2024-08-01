@@ -36,9 +36,9 @@ class Process_miner:
         self.log = xes_importer.apply(log)
         self.metrics_obj = self.__get_metrics_type(metrics)
 
-        self.opt = self.__get_opt_type(opt_type)
+        self.opt = self.__get_opt_type(opt_type, verbose)
 
-        self.local_time = time.strftime("[%Y/%m/%d - %H:%M:%S]", time.localtime())
+        self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
         self.star_time = time.time()
 
     def __get_miner_alg(self, miner):
@@ -51,9 +51,9 @@ class Process_miner:
             raise ValueError(f"Las métricas '{metrics}' no están soportadas. Las métricas disponibles son: {list(self.metrics_mapping.keys())}")
         return self.metrics_mapping[metrics]
 
-    def __get_opt_type(self, opt_type):
+    def __get_opt_type(self, opt_type, verbose):
         if opt_type == 'NSGA-II': 
-            opt = optimize_Jmetal.Opt_NSGAII(self.miner, self.log, self.metrics_obj, self.verbose)
+            opt = optimize_Jmetal.Opt_NSGAII(self.miner, self.log, self.metrics_obj, verbose)
         else: raise ValueError(f'Optimizador {opt_type} no soportado o es incorrecto')
         return opt
     
@@ -81,7 +81,20 @@ class Process_miner:
         disc = self.opt.discover(**params)
         self.end_time = time.time()
         self.__log()
+        self.__save()
         return disc
+    
+
+    def __save(self):
+        outpath = f'out/{self.local_time}-{self.log_name}-{self.opt_type}'
+        os.makedirs(outpath, exist_ok=True)
+
+        for i,j in enumerate(self.opt.get_pareto_front_petri_nets()):
+            gviz = pn_visualizer.apply(j[0], j[1], j[2])
+            pn_visualizer.save(gviz, f'{outpath}/petri_pareto_{i}.png')
+
+        self.opt.plot_pareto_front(title='Pareto front approximation', label=f'Pareto front', filename=f'{outpath}/Pareto Front', format='png')
+
                 
 ## TESTING
 if __name__ == "__main__":
@@ -102,20 +115,24 @@ if __name__ == "__main__":
                             opt_type='NSGA-II',
                             metrics='basic',
                             log = log, 
-                            verbose=0)
+                            verbose = 0,
+                            )
     
     p_miner.discover(population_size=100,
                      offspring_population_size=100,
                      mutation = PolynomialMutation(probability=1.0 / p_miner.opt.problem.number_of_variables, distribution_index=20),
                      crossover = SBXCrossover(probability=1.0, distribution_index=20),
                      termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
-    
+
+
     # obtain optimal petri net
-    optimal_petri_net, initial_marking, final_marking = p_miner.opt.get_petri_net()
+    #optimal_petri_net, initial_marking, final_marking = p_miner.opt.get_petri_net()
 
     # visualize petri net
-    gviz = pn_visualizer.apply(optimal_petri_net, initial_marking, final_marking)
-    pn_visualizer.view(gviz)
+    #gviz = pn_visualizer.apply(optimal_petri_net, initial_marking, final_marking)
+    #pn_visualizer.view(gviz)
 
     # plot Pareto front
-    p_miner.opt.plot_pareto_front(title='Pareto front approximation', label=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', filename=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', format='png')
+    #p_miner.opt.plot_pareto_front(title='Pareto front approximation', label=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', filename=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', format='png')
+
+    # Visualize petri nets from Pareto front solutions

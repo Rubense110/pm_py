@@ -2,12 +2,14 @@ TODO
 
 - Inductive Params
 - Inductive Param range
+
 - process_miner.py
-    - Improve verbosity -> current iteration
     - Exception control
 
 - Pipeline Log
     - store all results in a folder
+    - load data from folder and visualization of different preti nets
+    - Future -> Visualize petris from different clusters?
 
 Clustering and Canonical.
 

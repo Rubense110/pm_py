@@ -3,6 +3,7 @@ import parameters
 
 import numpy as np
 import random
+import os
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from jmetal.core.problem import FloatProblem, FloatSolution
@@ -109,7 +110,7 @@ class Opt_NSGAII():
             print("Solution ",i," :")
             print("     variables: ",j.variables)
             print("     objectives:",j.objectives.tolist(),"\n")
-        print("\n##############\n")
+        print("##############")
 
     def discover(self, **params):
         self.algorithm = NSGAII(problem= self.problem,**params)
@@ -125,12 +126,15 @@ class Opt_NSGAII():
     def get_best_solution(self):
         return self.result[0]  # TO-DO
 
-    def get_petri_net(self):
-        best_solution = self.get_best_solution()
-        print("\n### Best Solution ###\n")
-        print(best_solution)
+    def get_petri_net(self, sol=None):
+        if sol == None:
+            sol = self.get_best_solution()
+    
+        print("\n### Solution ###\n")
+        print(sol)
         print("\n#####################\n")
-        params = {key: best_solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
+
+        params = {key: sol.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
 
         petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
         return petri_net, initial_marking, final_marking
@@ -139,10 +143,16 @@ class Opt_NSGAII():
         return self.non_dom_sols
     
     def plot_pareto_front(self, title, label, filename, format):
-
         front = self.get_non_dominated_sols()
         plot_front = Plot(title=title, axis_labels=self.problem.metrics_obj.get_labels())
         plot_front.plot(front, label=label, filename=filename, format=format)
+
+    def get_pareto_front_petri_nets(self):
+        front = self.get_non_dominated_sols()
+        ps = list()
+        for sol in front:
+            ps.append(self.get_petri_net(sol))
+        return ps
 
     
 ## Testing
