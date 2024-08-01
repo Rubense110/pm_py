@@ -71,7 +71,7 @@ class Process_miner:
         dicc = dict()
         for (attr_name, attr_value) in self.params.items():
             if hasattr(attr_value, '__dict__'):
-                dicc[attr_name] = attr_value.__dict__
+                dicc[attr_name] = [attr_value.__class__, attr_value.__dict__]
             else:
                 dicc[attr_name] = attr_value
         return dicc
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 1000
+    max_evaluations = 100
 
     log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'test/Financial/BPI_Challenge_2012.xes'
@@ -115,8 +115,7 @@ if __name__ == "__main__":
                             opt_type='NSGA-II',
                             metrics='basic',
                             log = log, 
-                            verbose = 0,
-                            )
+                            verbose = 0)
     
     p_miner.discover(population_size=100,
                      offspring_population_size=100,
