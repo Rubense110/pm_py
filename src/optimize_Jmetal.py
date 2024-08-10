@@ -156,6 +156,7 @@ class Opt_NSGAII():
 
     
 ## Testing
+
 if __name__ == "__main__":
 
     from pm4py.objects.log.importer.xes import importer as xes_importer

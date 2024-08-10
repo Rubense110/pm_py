@@ -89,13 +89,25 @@ class Process_miner:
         outpath = f'out/{self.local_time}-{self.log_name}-{self.opt_type}'
         os.makedirs(outpath, exist_ok=True)
 
-        for i,j in enumerate(self.opt.get_pareto_front_petri_nets()):
-            gviz = pn_visualizer.apply(j[0], j[1], j[2])
-            pn_visualizer.save(gviz, f'{outpath}/petri_pareto_{i}.png')
+        for index,petri in enumerate(self.opt.get_pareto_front_petri_nets()):
+            gviz = pn_visualizer.apply(petri[0], petri[1], petri[2])
+            pn_visualizer.save(gviz, f'{outpath}/petri_pareto_{index}.png')
 
         self.opt.plot_pareto_front(title='Pareto front approximation', label=f'Pareto front', filename=f'{outpath}/Pareto Front', format='png')
 
-                
+        with open(f"{outpath}/results_variables.csv", 'w') as log:
+            parameter_names = ",".join(self.opt.parameters_info.base_params.keys())
+            log.write(parameter_names+"\n")
+            for sol in self.opt.get_result():
+                log.write(f'{",".join(map(str, sol.variables))}\n')
+
+        with open(f"{outpath}/results_objectives.csv", 'w') as log:
+            metrics_labels = ",".join(self.metrics_obj.get_labels())
+            log.write(metrics_labels+"\n")
+            for sol in self.opt.get_result():
+                log.write(f'{",".join(map(str, sol.objectives))}\n')
+
+
 ## TESTING
 if __name__ == "__main__":
         
