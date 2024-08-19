@@ -1,0 +1,141 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d0" for="node" attr.name="type" attr.type="string"/>
+<graph edgedefault="directed"><node id="intplace_Unmatched">
+  <data key="d0">place</data>
+</node>
+<node id="intplace_Accepted">
+  <data key="d0">place</data>
+</node>
+<node id="source0">
+  <data key="d0">place</data>
+</node>
+<node id="sink0">
+  <data key="d0">place</data>
+</node>
+<node id="pre_Queued">
+  <data key="d0">place</data>
+</node>
+<node id="pre_Accepted">
+  <data key="d0">place</data>
+</node>
+<node id="pre_Completed">
+  <data key="d0">place</data>
+</node>
+<node id="intplace_Queued">
+  <data key="d0">place</data>
+</node>
+<node id="pre_Unmatched">
+  <data key="d0">place</data>
+</node>
+<node id="(hid_14, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(Queued, 'Queued')">
+  <data key="d0">transition</data>
+</node>
+<node id="(Completed, 'Completed')">
+  <data key="d0">transition</data>
+</node>
+<node id="(Unmatched, 'Unmatched')">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_16, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_18, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_20, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_22, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_17, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_8, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_11, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(Accepted, 'Accepted')">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_4, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_13, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_19, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_21, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="(hid_15, None)">
+  <data key="d0">transition</data>
+</node>
+<node id="intplace_Accepted"/>
+<node id="hid_17"/>
+<node id="Unmatched"/>
+<node id="intplace_Unmatched"/>
+<node id="hid_8"/>
+<node id="pre_Accepted"/>
+<node id="source0"/>
+<node id="hid_16"/>
+<node id="hid_21"/>
+<node id="pre_Completed"/>
+<node id="hid_19"/>
+<node id="pre_Unmatched"/>
+<node id="intplace_Queued"/>
+<node id="hid_15"/>
+<node id="hid_20"/>
+<node id="Completed"/>
+<node id="hid_14"/>
+<node id="pre_Queued"/>
+<node id="Queued"/>
+<node id="hid_18"/>
+<node id="hid_22"/>
+<node id="hid_4"/>
+<node id="Accepted"/>
+<node id="hid_13"/>
+<node id="hid_11"/>
+<node id="sink0"/>
+<edge source="intplace_Accepted" target="hid_17"/>
+<edge source="intplace_Accepted" target="hid_19"/>
+<edge source="intplace_Accepted" target="hid_16"/>
+<edge source="intplace_Accepted" target="hid_18"/>
+<edge source="hid_17" target="pre_Completed"/>
+<edge source="Unmatched" target="intplace_Unmatched"/>
+<edge source="intplace_Unmatched" target="hid_21"/>
+<edge source="intplace_Unmatched" target="hid_20"/>
+<edge source="intplace_Unmatched" target="hid_22"/>
+<edge source="hid_8" target="pre_Accepted"/>
+<edge source="pre_Accepted" target="Accepted"/>
+<edge source="source0" target="hid_8"/>
+<edge source="source0" target="hid_4"/>
+<edge source="source0" target="hid_13"/>
+<edge source="source0" target="hid_11"/>
+<edge source="hid_16" target="pre_Accepted"/>
+<edge source="hid_21" target="pre_Completed"/>
+<edge source="pre_Completed" target="Completed"/>
+<edge source="hid_19" target="pre_Unmatched"/>
+<edge source="pre_Unmatched" target="Unmatched"/>
+<edge source="intplace_Queued" target="hid_15"/>
+<edge source="intplace_Queued" target="hid_14"/>
+<edge source="hid_15" target="pre_Queued"/>
+<edge source="hid_20" target="pre_Accepted"/>
+<edge source="Completed" target="sink0"/>
+<edge source="hid_14" target="pre_Accepted"/>
+<edge source="pre_Queued" target="Queued"/>
+<edge source="Queued" target="intplace_Queued"/>
+<edge source="hid_18" target="pre_Queued"/>
+<edge source="hid_22" target="pre_Queued"/>
+<edge source="hid_4" target="pre_Queued"/>
+<edge source="Accepted" target="intplace_Accepted"/>
+<edge source="hid_13" target="pre_Unmatched"/>
+<edge source="hid_11" target="pre_Completed"/>
+</graph></graphml>

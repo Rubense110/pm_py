@@ -1,14 +1,15 @@
 from abc import abstractmethod
 from pm4py.objects.petri_net.obj import PetriNet
 import numpy as np
-
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class Metrics():
 
     def __init__(self: PetriNet):
-        self.n_of_metrics
-        self.metrics_array
-        self.labels
+        self.n_of_metrics = 0
+        self.metrics_array = np.array([])
+        self.labels = []
 
     @abstractmethod
     def get_n_of_metrics(self):
@@ -97,8 +98,48 @@ class Basic_Metrics(Metrics):
     def get_labels(self):
         return self.labels
 
+class Basic_Metrics_Usefull_simple(Basic_Metrics):
+    
+    def __init__(self):
+        super(Basic_Metrics, self).__init__()
+
+        is_ap = False
+        NSFE = 0
+        GM = 0
+        basic_useful_metrics = [is_ap, NSFE, GM]
+        basic_useful_metrics_labels = ["is_ap", "NSFE", "GM"]
+
+        self.metrics_array = np.append(self.get_metrics_array, np.array(basic_useful_metrics))
+        self.n_of_metrics = len(self.metrics_array)
+        self.labels.extend(basic_useful_metrics_labels)
+
+    def get_metrics_array(self, petri: PetriNet):
+        basic_metrics = super().get_metrics_array(petri)
+        petri_graph = self.__convert_to_graph(petri)
+        #self.__plot_petri_graph(petri_graph)
+
+        is_ap = nx.is_aperiodic(petri_graph)
 
 
+    def __plot_petri_graph(self, graph: nx.DiGraph):
+        ## -- Testing purposes --
+        pos = nx.spring_layout(graph)
+        nx.draw(graph, pos, with_labels=True, node_size=100, node_color='skyblue', font_size=10, font_weight='bold')
+        plt.savefig("petrigraph.png")
+
+    def __convert_to_graph(self, petri: PetriNet):
+        graph = nx.DiGraph()
+
+        for place in petri.places:
+            graph.add_node(place, type= "place")
+
+        for transition in petri.transitions:
+            graph.add_node(transition, type= "transition")
+
+        for arc in petri.arcs:
+            graph.add_edge(arc.source, arc.target)
+
+        return graph
 ## TESTING
 if __name__ == "__main__":
 
@@ -115,17 +156,19 @@ if __name__ == "__main__":
     gviz = pn_visualizer.apply(net, initial_marking, final_marking)
     pn_visualizer.view(gviz)
 
-    metrics_obj =  Basic_Metrics()
+    metrics_obj =  Basic_Metrics_Usefull_simple()
     metrics_labels = metrics_obj.get_labels()
-    metrics = metrics_obj.get_metrics_array(net)
+    #metrics = 
+    metrics_obj.get_metrics_array(net)
 
-    print(type(metrics), metrics)
-    print("\n### METRICS ###")
-    print(f"{metrics_labels[0]}:    {metrics[0]}")
-    print(f"{metrics_labels[1]}:    {metrics[1]}")
-    print(f"{metrics_labels[2]}:    {metrics[2]}")
-    print(f"{metrics_labels[3]}:    {metrics[3]}")
-    print(f"{metrics_labels[4]}:    {metrics[4]}")
-    print(f"{metrics_labels[5]}:    {metrics[5]}")
-    print(f"{metrics_labels[6]}:    {metrics[6]}\n")
-    print(f"Nº of metrics: {metrics_obj.get_n_of_metrics()}")
+    def show(metrics):
+        print(type(metrics), metrics)
+        print("\n### METRICS ###")
+        print(f"{metrics_labels[0]}:    {metrics[0]}")
+        print(f"{metrics_labels[1]}:    {metrics[1]}")
+        print(f"{metrics_labels[2]}:    {metrics[2]}")
+        print(f"{metrics_labels[3]}:    {metrics[3]}")
+        print(f"{metrics_labels[4]}:    {metrics[4]}")
+        print(f"{metrics_labels[5]}:    {metrics[5]}")
+        print(f"{metrics_labels[6]}:    {metrics[6]}\n")
+        print(f"Nº of metrics: {metrics_obj.get_n_of_metrics()}")
