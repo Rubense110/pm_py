@@ -99,30 +99,45 @@ class Basic_Metrics(Metrics):
         return self.labels
 
 class Basic_Metrics_Usefull_simple(Basic_Metrics):
+
+    ## RULES
+    NSFE_TRESHOLD_MORE_THAN = 1.5
+    NSFE_TRESHOLD_LESS_THAN = 0.5
+    GM_TRESHOLD_MORE_THAN = 1.5
     
     def __init__(self):
-        super(Basic_Metrics, self).__init__()
-
-        is_ap = False
-        NSFE = 0
-        GM = 0
-        basic_useful_metrics = [is_ap, NSFE, GM]
-        basic_useful_metrics_labels = ["is_ap", "NSFE", "GM"]
-
-        self.metrics_array = np.append(self.get_metrics_array, np.array(basic_useful_metrics))
-        self.n_of_metrics = len(self.metrics_array)
-        self.labels.extend(basic_useful_metrics_labels)
+        super().__init__()
+        #basic_useful_metrics_labels = ["is_ap", "NSFE", "GM"]
+        #self.labels.extend(basic_useful_metrics_labels)
 
     def get_metrics_array(self, petri: PetriNet):
-        basic_metrics = super().get_metrics_array(petri)
-        petri_graph = self.__convert_to_graph(petri)
+        petri_graph = self.__convert_petri_to_graph(petri)
         #self.__plot_petri_graph(petri_graph)
 
-        nsfe = self.__calculate_nsfe(petri)
-        is_ap = nx.is_aperiodic(petri_graph)
-        gm = self.__calculate_gm(petri)
+        NSFE = self.__calculate_nsfe(petri)
+        IS_AP = nx.is_aperiodic(petri_graph)
+        GM = self.__calculate_gm(petri)
 
-    def __convert_to_graph(self, petri: PetriNet):
+        print(NSFE, IS_AP, GM)
+
+        if  IS_AP or  self.__check_nsfe_interval(NSFE) or  self.__check_gm_interval(GM):
+            penalty = float('inf')
+            return np.array([penalty] * self.n_of_metrics)
+        else:
+            return super().get_metrics_array(petri)
+
+    def __check_nsfe_interval(self, NSFE):
+        if NSFE <= self.NSFE_TRESHOLD_LESS_THAN or NSFE > self.NSFE_TRESHOLD_MORE_THAN:
+            return True
+        else:
+            return False
+    def __check_gm_interval(self, GM):
+        if GM > self.GM_TRESHOLD_MORE_THAN:
+            return True
+        else:
+            return False
+    
+    def __convert_petri_to_graph(self, petri: PetriNet):
         graph = nx.DiGraph()
 
         for place in petri.places:
@@ -143,13 +158,16 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
             in_count = len(place.in_arcs)
             out_count = len(place.out_arcs)
             gm += abs(in_count - out_count)
-            
+        gm = gm//len(petri.places)
+        return gm
+
     def __calculate_nsfe(self, petri: PetriNet):
         '''Total number of outgoing flows from events'''
         nsfe = 0
         for places in petri.places:
             nsfe += len(places.out_arcs)
         nsfe = nsfe/len(petri.places) # Normalize
+        return nsfe
         
     ## -- Testing purposes --
     def __plot_petri_graph(self, graph: nx.DiGraph):
@@ -176,7 +194,7 @@ if __name__ == "__main__":
     metrics_obj =  Basic_Metrics_Usefull_simple()
     metrics_labels = metrics_obj.get_labels()
     #metrics = 
-    metrics_obj.get_metrics_array(net)
+    print(metrics_obj.get_metrics_array(net))
 
     def show(metrics):
         print(type(metrics), metrics)
