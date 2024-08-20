@@ -118,14 +118,9 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
         petri_graph = self.__convert_to_graph(petri)
         #self.__plot_petri_graph(petri_graph)
 
+        nsfe = self.__calculate_nsfe(petri)
         is_ap = nx.is_aperiodic(petri_graph)
-
-
-    def __plot_petri_graph(self, graph: nx.DiGraph):
-        ## -- Testing purposes --
-        pos = nx.spring_layout(graph)
-        nx.draw(graph, pos, with_labels=True, node_size=100, node_color='skyblue', font_size=10, font_weight='bold')
-        plt.savefig("petrigraph.png")
+        gm = self.__calculate_gm(petri)
 
     def __convert_to_graph(self, petri: PetriNet):
         graph = nx.DiGraph()
@@ -140,6 +135,28 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
             graph.add_edge(arc.source, arc.target)
 
         return graph
+    
+    def __calculate_gm(self, petri: PetriNet):
+        '''Overall difference between incoming and outgoing'''
+        gm = 0
+        for place in petri.places:
+            in_count = len(place.in_arcs)
+            out_count = len(place.out_arcs)
+            gm += abs(in_count - out_count)
+            
+    def __calculate_nsfe(self, petri: PetriNet):
+        '''Total number of outgoing flows from events'''
+        nsfe = 0
+        for places in petri.places:
+            nsfe += len(places.out_arcs)
+        nsfe = nsfe/len(petri.places) # Normalize
+        
+    ## -- Testing purposes --
+    def __plot_petri_graph(self, graph: nx.DiGraph):
+        pos = nx.spring_layout(graph)
+        nx.draw(graph, pos, with_labels=True, node_size=100, node_color='skyblue', font_size=10, font_weight='bold')
+        plt.savefig("petrigraph.png")
+
 ## TESTING
 if __name__ == "__main__":
 
