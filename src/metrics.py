@@ -121,10 +121,11 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
         print(NSFE, IS_AP, GM)
 
         if  IS_AP or  self.__check_nsfe_interval(NSFE) or  self.__check_gm_interval(GM):
+            return super().get_metrics_array(petri)
+        else:
             penalty = float('inf')
             return np.array([penalty] * self.n_of_metrics)
-        else:
-            return super().get_metrics_array(petri)
+            
 
     def __check_nsfe_interval(self, NSFE):
         if NSFE <= self.NSFE_TRESHOLD_LESS_THAN or NSFE > self.NSFE_TRESHOLD_MORE_THAN:
