@@ -1,4 +1,7 @@
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
+from pm4py.algo.discovery.inductive.algorithm import Variants as InductiveVariants
+from pm4py.algo.discovery.inductive.variants.imf import IMFParameters
+
 import pm4py
 
 class Heuristic_Parameters():
@@ -23,8 +26,7 @@ class Heuristic_Parameters():
         HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
     }
 
-#    [0.9997896792467974, 0.8672423645658718, 0.9474892596581139, 0.46234702286865903, 0.6449204674954552, 0.4588659015710691]
-
+    # Data type for each parameter
     param_type = {
         HeuristicsParameters.DEPENDENCY_THRESH : float,
         HeuristicsParameters.AND_MEASURE_THRESH : float,
@@ -44,3 +46,10 @@ class Heuristic_Parameters():
         #self.param_range[HeuristicsParameters.MIN_DFG_OCCURRENCES] = [min_activity_count, max_activity_count]
 
         #print(self.param_range)
+
+class Inductive_Parameters():
+    
+    base_params = {InductiveVariants : InductiveVariants.IM}
+    param_range = {InductiveVariants : [InductiveVariants.IM, InductiveVariants.IMf, InductiveVariants.IMd]}
+    param_type  = {InductiveVariants : 'choice'} # TO-DO -> generic Enum class for this kind of choices
+

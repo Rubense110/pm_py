@@ -107,6 +107,8 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
     
     def __init__(self):
         super().__init__()
+        
+        ## TO-DO -> add this info to the logs
         #basic_useful_metrics_labels = ["is_ap", "NSFE", "GM"]
         #self.labels.extend(basic_useful_metrics_labels)
 
@@ -118,12 +120,12 @@ class Basic_Metrics_Usefull_simple(Basic_Metrics):
         IS_AP = nx.is_aperiodic(petri_graph)
         GM = self.__calculate_gm(petri)
 
-        print(NSFE, IS_AP, GM)
+        #print(NSFE, IS_AP, GM)
 
         if  IS_AP or  self.__check_nsfe_interval(NSFE) or  self.__check_gm_interval(GM):
             return super().get_metrics_array(petri)
         else:
-            penalty = float('inf')
+            penalty = 1e6
             return np.array([penalty] * self.n_of_metrics)
             
 

@@ -2,6 +2,7 @@
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
 import time
@@ -16,7 +17,7 @@ class Process_miner:
     log_file = 'doc/log.csv'
 
     miner_mapping = {
-        #'inductive': pm4py.algo.discovery.inductive,
+        'inductive': inductive_miner, 
         'heuristic': heuristics_miner,
     }
 
@@ -121,8 +122,8 @@ if __name__ == "__main__":
 
     max_evaluations = 1000
 
-    #log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
-    log = 'test/Financial/BPI_Challenge_2012.xes'
+    log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
+    #log = 'test/Financial/BPI_Challenge_2012.xes'
     
     p_miner = Process_miner(miner_type='heuristic',
                             opt_type='NSGA-II',
@@ -132,10 +133,9 @@ if __name__ == "__main__":
     
     p_miner.discover(population_size=100,
                      offspring_population_size=100,
-                     mutation = PolynomialMutation(probability=1.0 / p_miner.opt.problem.number_of_variables, distribution_index=20),
+                     mutation = PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
                      crossover = SBXCrossover(probability=1.0, distribution_index=20),
                      termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
-
 
     # obtain optimal petri net
     #optimal_petri_net, initial_marking, final_marking = p_miner.opt.get_petri_net()

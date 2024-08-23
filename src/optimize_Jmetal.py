@@ -59,7 +59,7 @@ class PM_miner_problem(FloatProblem):
         solution.number_of_objectives = self.number_of_objectives
         
         return solution
-
+    
     def create_solution(self) -> FloatSolution:
         new_solution = FloatSolution(number_of_constraints=self.number_of_constraints,
                                      number_of_objectives=self.number_of_objectives,
@@ -67,11 +67,12 @@ class PM_miner_problem(FloatProblem):
                                      upper_bound = self.upper_bound)   
         # Random Solution
         random_sol = list()
-        for i,j in enumerate(self.parameters_info.param_type.values()):
-            if j == int: 
-                random_sol.append(random.randint(self.lower_bound[i], self.upper_bound[i]))
+        for index, param_and_type in enumerate(self.parameters_info.param_type.items()):
+            data_type = param_and_type[1]
+            if data_type == int: 
+                random_sol.append(random.randint(self.lower_bound[index], self.upper_bound[index]))
             else:
-                random_sol.append(random.uniform(self.lower_bound[i], self.upper_bound[i]))
+                random_sol.append(random.uniform(self.lower_bound[index], self.upper_bound[index]))
 
 
         new_solution.variables = random_sol
@@ -89,11 +90,11 @@ class PM_miner_problem(FloatProblem):
     def number_of_objectives(self) -> int:
         return super().number_of_objectives()
 
-class Opt_NSGAII():
+class Opt_NSGAII(PM_miner_problem):
      
     def __init__(self, miner, log, metrics_obj, verbose):
-        self.parameters_info = self.__get_parameters(miner, log)
-        self.problem = PM_miner_problem(miner, log, metrics_obj, self.parameters_info, verbose)
+        parameters_info = self.__get_parameters(miner, log)
+        super().__init__(miner, log, metrics_obj, parameters_info, verbose)
         
 
     def __get_parameters(self, miner, log):
@@ -113,7 +114,7 @@ class Opt_NSGAII():
         print("##############")
 
     def discover(self, **params):
-        self.algorithm = NSGAII(problem= self.problem,**params)
+        self.algorithm = NSGAII(problem= self,**params)
         
         self.algorithm.run()
         self.result = self.algorithm.result()
@@ -136,7 +137,7 @@ class Opt_NSGAII():
 
         params = {key: sol.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
 
-        petri_net, initial_marking, final_marking = self.problem.miner.apply(self.problem.log, parameters=params)
+        petri_net, initial_marking, final_marking = self.miner.apply(self.log, parameters=params)
         return petri_net, initial_marking, final_marking
     
     def get_non_dominated_sols(self):
@@ -144,15 +145,15 @@ class Opt_NSGAII():
     
     def plot_pareto_front(self, title, label, filename, format):
         front = self.get_non_dominated_sols()
-        plot_front = Plot(title=title, axis_labels=self.problem.metrics_obj.get_labels())
+        plot_front = Plot(title=title, axis_labels=self.metrics_obj.get_labels())
         plot_front.plot(front, label=label, filename=filename, format=format)
 
     def get_pareto_front_petri_nets(self):
         front = self.get_non_dominated_sols()
-        ps = list()
+        petri_nets_from_pareto_sols = list()
         for sol in front:
-            ps.append(self.get_petri_net(sol))
-        return ps
+            petri_nets_from_pareto_sols.append(self.get_petri_net(sol))
+        return petri_nets_from_pareto_sols
 
     
 ## Testing
@@ -172,10 +173,10 @@ if __name__ == "__main__":
     log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
     metrics_obj = metrics.Basic_Metrics()
 
-    opt = Opt_NSGAII(heuristics_miner, log, metrics_obj)
-    opt.discover(pop_size=100,
-                 off_pop_size=100,
-                 mutation = PolynomialMutation(probability=1.0 / opt.problem.number_of_variables, distribution_index=20),
+    opt = Opt_NSGAII(heuristics_miner, log, metrics_obj, verbose=0)
+    opt.discover(population_size=100,
+                 offspring_population_size=100,
+                 mutation = PolynomialMutation(probability=1.0 / opt.number_of_variables, distribution_index=20),
                  crossover = SBXCrossover(probability=1.0, distribution_index=20),
                  termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
     
