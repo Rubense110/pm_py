@@ -2,4 +2,4 @@
 *.venv
 *.csv
 *.to
-.venv/
+/.venv
