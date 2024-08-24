@@ -49,7 +49,14 @@ class Heuristic_Parameters():
 
 class Inductive_Parameters():
     
-    base_params = {InductiveVariants : InductiveVariants.IM}
-    param_range = {InductiveVariants : [InductiveVariants.IM, InductiveVariants.IMf, InductiveVariants.IMd]}
-    param_type  = {InductiveVariants : 'choice'} # TO-DO -> generic Enum class for this kind of choices
-
+    base_params = {'noise_threshold' : 0,
+                   'multi_processing': False,
+                   'disable_fallthroughs': False}
+    
+    param_range = {'noise_threshold' : [0, 1],
+                   'multi_processing': [False, True],
+                   'disable_fallthroughs': [False, True]}
+    
+    param_type  = {'noise_threshold' : float,
+                   'multi_processing': bool,
+                   'disable_fallthroughs': bool}

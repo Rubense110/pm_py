@@ -6,6 +6,7 @@ import random
 import os
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
+from pm4py.convert import convert_to_petri_net
 from jmetal.core.problem import FloatProblem, FloatSolution
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal.util.solution import get_non_dominated_solutions
@@ -38,27 +39,32 @@ class PM_miner_problem(FloatProblem):
 
     # Determines the value range for the parameters of the specified miner
     def __get_bounds(self):
-        if self.miner == heuristics_miner:
-            lower_bound = [i[0] for i in self.parameters_info.param_range.values()]
-            upper_bound = [i[1] for i in self.parameters_info.param_range.values()]
-        else: pass
-
+        lower_bound = [i[0] for i in self.parameters_info.param_range.values()]
+        upper_bound = [i[1] for i in self.parameters_info.param_range.values()]
         return lower_bound, upper_bound
     
     def __get_n_genes(self):
-        if self.miner == heuristics_miner:
-            return len(self.parameters_info.param_range)
+        return len(self.parameters_info.param_range)
         
     def evaluate(self, solution: FloatSolution) -> FloatSolution :
         if self.verbose == 1:
             print(f'Iteracion: {self.current_iteration}', end='\r')
             self.current_iteration+=1
         params = {key: solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
-        petri, _, _ = self.miner.apply(self.log, parameters= params)
+        petri, _, _ = self._create_petri_net_sol(params)
         solution.objectives = self.metrics_obj.get_metrics_array(petri)
         solution.number_of_objectives = self.number_of_objectives
         
         return solution
+    
+    def _create_petri_net_sol(self, params):
+        if self.miner == heuristics_miner:
+            petri, initial_marking, final_marking = self.miner.apply(self.log, parameters= params)
+        elif self.miner == inductive_miner:
+            inductive_variant = inductive_miner.Variants.IMf if params["noise_threshold"] > 0 else inductive_miner.Variants.IM
+            process_tree = self.miner.apply(self.log, variant = inductive_variant,  parameters= params )
+            petri, initial_marking, final_marking = convert_to_petri_net(process_tree)    
+        return petri, initial_marking, final_marking
     
     def create_solution(self) -> FloatSolution:
         new_solution = FloatSolution(number_of_constraints=self.number_of_constraints,
@@ -71,6 +77,8 @@ class PM_miner_problem(FloatProblem):
             data_type = param_and_type[1]
             if data_type == int: 
                 random_sol.append(random.randint(self.lower_bound[index], self.upper_bound[index]))
+            elif data_type == bool:
+                random_sol.append(random.choice([True, False]))
             else:
                 random_sol.append(random.uniform(self.lower_bound[index], self.upper_bound[index]))
 
@@ -102,8 +110,11 @@ class Opt_NSGAII(PM_miner_problem):
             params = parameters.Heuristic_Parameters()
             params.adjust_heu_params(log)
             return params
+        elif miner == inductive_miner:
+            params = parameters.Inductive_Parameters()
+            return params
         else:
-            raise ValueError(f"Miner '{miner}' not supported. Available miners are: Heuristic, Inductive")
+            raise ValueError(f"Miner '{miner}' not supported. Available miners are: heuristic, inductive")
 
     def __show_result(self):
         print("\n### RESULT ###\n")
@@ -137,7 +148,7 @@ class Opt_NSGAII(PM_miner_problem):
 
         params = {key: sol.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
 
-        petri_net, initial_marking, final_marking = self.miner.apply(self.log, parameters=params)
+        petri_net, initial_marking, final_marking = self._create_petri_net_sol(params)
         return petri_net, initial_marking, final_marking
     
     def get_non_dominated_sols(self):
