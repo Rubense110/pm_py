@@ -131,6 +131,7 @@ class Opt_NSGAII(PM_miner_problem):
         self.result = self.algorithm.result()
         self.__show_result()
         self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
+        print(len(self.non_dom_sols))
 
     def get_result(self):
         return self.result

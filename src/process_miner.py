@@ -9,8 +9,8 @@ import time
 import os
 
 import optimize_Jmetal
-#import optimize_pyGAD
 import metrics 
+import utils
 
 class Process_miner:
 
@@ -84,6 +84,7 @@ class Process_miner:
         self.end_time = time.time()
         self.__log()
         self.__save()
+        utils.plot_pareto_front([sol.objectives for sol in self.opt.get_result()])
         return disc
     
 
@@ -125,9 +126,9 @@ if __name__ == "__main__":
     log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'test/Financial/BPI_Challenge_2012.xes'
     
-    p_miner = Process_miner(miner_type='inductive',
+    p_miner = Process_miner(miner_type='heuristic',
                             opt_type='NSGA-II',
-                            metrics='basic_useful_simple',
+                            metrics='basic',
                             log = log, 
                             verbose = 0)
     
