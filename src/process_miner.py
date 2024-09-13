@@ -122,8 +122,8 @@ if __name__ == "__main__":
 
     max_evaluations = 1000
 
-    #log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
-    log = 'test/Financial/BPI_Challenge_2012.xes'
+    log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
+    #log = 'test/Financial/BPI_Challenge_2012.xes'
     
     p_miner = Process_miner(miner_type='inductive',
                             opt_type='NSGA-II',
