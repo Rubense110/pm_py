@@ -133,8 +133,8 @@ class Opt_NSGAII(PM_miner_problem):
         self.result_objectives = [sol.objectives for sol in self.result]
         self.__show_result()
         #self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
-        self.non_dom_sols = utils.calculate_pareto_front(self.algorithm.result())
-        print(len(self.non_dom_sols))
+        #print(type(self.algorithm.result())) -> list()
+        self.non_dom_sols = utils.calculate_pareto_front(self.result)
 
     def get_result(self):
         return self.result
@@ -160,7 +160,7 @@ class Opt_NSGAII(PM_miner_problem):
         return self.non_dom_sols
     
     def plot_pareto_front(self, title, filename):
-        utils.plot_pareto_front(self.result_objectives,
+        utils.plot_pareto_front(self.result,
                                 axis_labels=self.metrics_obj.get_labels(),
                                 title = title,
                                 filename=filename)
