@@ -84,7 +84,6 @@ class Process_miner:
         self.end_time = time.time()
         self.__log()
         self.__save()
-        utils.plot_pareto_front([sol.objectives for sol in self.opt.get_result()])
         return disc
     
 
@@ -96,7 +95,7 @@ class Process_miner:
             gviz = pn_visualizer.apply(petri[0], petri[1], petri[2])
             pn_visualizer.save(gviz, f'{outpath}/petri_pareto_{index}.png')
 
-        self.opt.plot_pareto_front(title='Pareto front approximation', label=f'Pareto front', filename=f'{outpath}/Pareto Front', format='png')
+        self.opt.plot_pareto_front(title='Pareto front approximation', filename=f'{outpath}/Pareto Front')
 
         with open(f"{outpath}/results_variables.csv", 'w') as log:
             parameter_names = ",".join(self.opt.parameters_info.base_params.keys())

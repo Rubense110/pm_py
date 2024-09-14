@@ -1,5 +1,6 @@
 import metrics
 import parameters
+import utils
 
 import numpy as np
 import random
@@ -129,8 +130,10 @@ class Opt_NSGAII(PM_miner_problem):
         
         self.algorithm.run()
         self.result = self.algorithm.result()
+        self.result_objectives = [sol.objectives for sol in self.result]
         self.__show_result()
-        self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
+        #self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
+        self.non_dom_sols = utils.calculate_pareto_front(self.algorithm.result())
         print(len(self.non_dom_sols))
 
     def get_result(self):
@@ -140,7 +143,8 @@ class Opt_NSGAII(PM_miner_problem):
         return self.result[0]  # TO-DO
 
     def get_petri_net(self, sol=None):
-        if sol == None:
+        print(sol)
+        if sol is None:
             sol = self.get_best_solution()
     
         print("\n### Solution ###\n")
@@ -155,10 +159,14 @@ class Opt_NSGAII(PM_miner_problem):
     def get_non_dominated_sols(self):
         return self.non_dom_sols
     
-    def plot_pareto_front(self, title, label, filename, format):
-        front = self.get_non_dominated_sols()
-        plot_front = Plot(title=title, axis_labels=self.metrics_obj.get_labels())
-        plot_front.plot(front, label=label, filename=filename, format=format)
+    def plot_pareto_front(self, title, filename):
+        utils.plot_pareto_front(self.result_objectives,
+                                axis_labels=self.metrics_obj.get_labels(),
+                                title = title,
+                                filename=filename)
+
+        #plot_front = Plot(title=title, axis_labels=self.metrics_obj.get_labels())
+        #plot_front.plot(front, label=label, filename=filename, format=format)
 
     def get_pareto_front_petri_nets(self):
         front = self.get_non_dominated_sols()
