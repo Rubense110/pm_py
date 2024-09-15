@@ -16,7 +16,6 @@ from jmetal.lab.visualization import Plot
 
 
 class PM_miner_problem(FloatProblem):
-
     current_iteration = 0
 
     def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info, verbose):
@@ -99,8 +98,8 @@ class PM_miner_problem(FloatProblem):
     def number_of_objectives(self) -> int:
         return super().number_of_objectives()
 
-class Opt_NSGAII(PM_miner_problem):
-     
+class Optimizer(PM_miner_problem):
+
     def __init__(self, miner, log, metrics_obj, verbose):
         parameters_info = self.__get_parameters(miner, log)
         super().__init__(miner, log, metrics_obj, parameters_info, verbose)
@@ -125,15 +124,12 @@ class Opt_NSGAII(PM_miner_problem):
             print("     objectives:",j.objectives.tolist(),"\n")
         print("##############")
 
-    def discover(self, **params):
-        self.algorithm = NSGAII(problem= self,**params)
-        
+    def discover(self,algorithm_class, **params):
+        self.algorithm = algorithm_class(problem=self, **params)
         self.algorithm.run()
         self.result = self.algorithm.result()
         self.result_objectives = [sol.objectives for sol in self.result]
         self.__show_result()
-        #self.non_dom_sols =  get_non_dominated_solutions(self.algorithm.result()) ## Añadí .all() a archive.py (def add)
-        #print(type(self.algorithm.result())) -> list()
         self.non_dom_sols = utils.calculate_pareto_front(self.result)
 
     def get_result(self):
@@ -193,12 +189,15 @@ if __name__ == "__main__":
     log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
     metrics_obj = metrics.Basic_Metrics()
 
-    opt = Opt_NSGAII(heuristics_miner, log, metrics_obj, verbose=0)
-    opt.discover(population_size=100,
-                 offspring_population_size=100,
-                 mutation = PolynomialMutation(probability=1.0 / opt.number_of_variables, distribution_index=20),
-                 crossover = SBXCrossover(probability=1.0, distribution_index=20),
-                 termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
+    opt = Optimizer(heuristics_miner, log, metrics_obj, verbose=0)
+
+    nsgaii_params = {'population_size': 100,
+                     'offspring_population_size': 100,
+                     'mutation': PolynomialMutation(probability=1.0 / opt.number_of_variables, distribution_index=20),
+                     'crossover': SBXCrossover(probability=1.0, distribution_index=20),
+                     'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
+    
+    opt.discover(algorithm_class=NSGAII, **nsgaii_params)
     
     optimal_petri_net, initial_marking, final_marking = opt.get_petri_net()
 
@@ -207,4 +206,4 @@ if __name__ == "__main__":
     pn_visualizer.view(gviz)
 
     # plot Pareto front
-    opt.plot_pareto_front(title='Pareto front approximation', label='NSGAII-Pareto-Closed', filename='NSGAII-Pareto-Closed', format='png')
+    opt.plot_pareto_front(title='Pareto front approximation', filename='NSGAII-Pareto-Closed')

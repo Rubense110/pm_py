@@ -8,7 +8,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 import time
 import os
 
-import optimize_Jmetal
+import optimize
 import metrics 
 import utils
 
@@ -38,7 +38,8 @@ class Process_miner:
         self.log = xes_importer.apply(log)
         self.metrics_obj = self.__get_metrics_type(metrics)
 
-        self.opt = self.__get_opt_type(opt_type, verbose)
+        ## TO-DO -> Manage exception for non supported algos
+        self.opt = optimize.Optimizer(self.miner, self.log, self.metrics_obj, verbose)
 
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
         self.star_time = time.time()
@@ -52,12 +53,6 @@ class Process_miner:
         if metrics not in self.metrics_mapping:
             raise ValueError(f"Las métricas '{metrics}' no están soportadas. Las métricas disponibles son: {list(self.metrics_mapping.keys())}")
         return self.metrics_mapping[metrics]
-
-    def __get_opt_type(self, opt_type, verbose):
-        if opt_type == 'NSGA-II': 
-            opt = optimize_Jmetal.Opt_NSGAII(self.miner, self.log, self.metrics_obj, verbose)
-        else: raise ValueError(f'Optimizador {opt_type} no soportado o es incorrecto')
-        return opt
     
     def __log(self):
         if os.path.isfile(self.log_file):
@@ -77,16 +72,7 @@ class Process_miner:
             else:
                 dicc[attr_name] = attr_value
         return dicc
-
-    def discover(self, **params):
-        self.params = params
-        disc = self.opt.discover(**params)
-        self.end_time = time.time()
-        self.__log()
-        self.__save()
-        return disc
     
-
     def __save(self):
         outpath = f'out/{self.local_time}-{self.log_name}-{self.opt_type}'
         os.makedirs(outpath, exist_ok=True)
@@ -109,6 +95,13 @@ class Process_miner:
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
 
+    def discover(self, algorithm_class, **params):
+        self.params = params
+        disc = self.opt.discover(algorithm_class=algorithm_class, **params)
+        self.end_time = time.time()
+        self.__log()
+        self.__save()
+        return disc
 
 ## TESTING
 if __name__ == "__main__":
@@ -120,7 +113,7 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 10000
+    max_evaluations = 1000
 
     log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'test/Financial/BPI_Challenge_2012.xes'
@@ -131,11 +124,13 @@ if __name__ == "__main__":
                             log = log, 
                             verbose = 0)
     
-    p_miner.discover(population_size=100,
-                     offspring_population_size=100,
-                     mutation = PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
-                     crossover = SBXCrossover(probability=1.0, distribution_index=20),
-                     termination_criterion=StoppingByEvaluations(max_evaluations=max_evaluations))
+    nsgaii_params = {'population_size': 100,
+                     'offspring_population_size': 100,
+                     'mutation': PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
+                     'crossover': SBXCrossover(probability=1.0, distribution_index=20),
+                     'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
+    
+    p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
 
     # obtain optimal petri net
     #optimal_petri_net, initial_marking, final_marking = p_miner.opt.get_petri_net()
