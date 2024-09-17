@@ -26,10 +26,9 @@ class Process_miner:
         'basic_useful_simple': metrics.Basic_Metrics_Usefull_simple()
     }
 
-    def __init__(self, miner_type, opt_type, metrics,  log, verbose):
+    def __init__(self, miner_type, metrics,  log, verbose):
 
         self.miner_type = miner_type
-        self.opt_type = opt_type
         self.metrics_type = metrics
         self.log_name = os.path.basename(log)
         self.verbose = verbose
@@ -98,10 +97,14 @@ class Process_miner:
     def discover(self, algorithm_class, **params):
         self.params = params
         disc = self.opt.discover(algorithm_class=algorithm_class, **params)
+        self.opt_type = algorithm_class.__name__
         self.end_time = time.time()
         self.__log()
         self.__save()
         return disc
+    
+    def set_log_file(self, logpath):
+        self.log_file = logpath
 
 ## TESTING
 if __name__ == "__main__":
@@ -113,14 +116,13 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 1000
+    max_evaluations = 10000
 
     log = 'test/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'test/Financial/BPI_Challenge_2012.xes'
     
     p_miner = Process_miner(miner_type='heuristic',
-                            opt_type='NSGA-II',
-                            metrics='basic',
+                            metrics='basic_useful_simple',
                             log = log, 
                             verbose = 0)
     
@@ -131,15 +133,3 @@ if __name__ == "__main__":
                      'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
     
     p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
-
-    # obtain optimal petri net
-    #optimal_petri_net, initial_marking, final_marking = p_miner.opt.get_petri_net()
-
-    # visualize petri net
-    #gviz = pn_visualizer.apply(optimal_petri_net, initial_marking, final_marking)
-    #pn_visualizer.view(gviz)
-
-    # plot Pareto front
-    #p_miner.opt.plot_pareto_front(title='Pareto front approximation', label=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', filename=f'{p_miner.opt_type}-Pareto-{p_miner.log_name}', format='png')
-
-    # Visualize petri nets from Pareto front solutions

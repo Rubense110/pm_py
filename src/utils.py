@@ -41,7 +41,7 @@ def plot_pareto_front(solutions : List[FloatSolution], axis_labels, title, filen
     for solution in dominated_solutions_objectives:
        plt.plot(x, solution, color= 'paleturquoise')
 
-    for index,optimal_solution in enumerate(pareto_front_objectives):
+    for optimal_solution in pareto_front_objectives:
         plt.plot(x, optimal_solution)
 
     plt.xlabel('Objetivos', fontweight= 550, fontsize = 14)
