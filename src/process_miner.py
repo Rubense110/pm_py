@@ -4,17 +4,19 @@ from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.visualization.petri_net import visualizer as pn_visualizer
+
 
 import time
 import os
 
 import optimize
 import metrics 
-import utils
 
 class Process_miner:
 
     log_file = 'doc/log.csv'
+    out_folder = 'out/'
 
     miner_mapping = {
         'inductive': inductive_miner, 
@@ -73,7 +75,7 @@ class Process_miner:
         return dicc
     
     def __save(self):
-        outpath = f'out/{self.local_time}-{self.log_name}-{self.opt_type}'
+        outpath = f'{self.out_folder}/{self.local_time}-{self.log_name}-{self.opt_type}'
         os.makedirs(outpath, exist_ok=True)
 
         for index,petri in enumerate(self.opt.get_pareto_front_petri_nets()):
@@ -105,12 +107,15 @@ class Process_miner:
     
     def set_log_file(self, logpath):
         self.log_file = logpath
+    
+    def set_out_folder(self, outpath):
+        os.makedirs(outpath, exist_ok=True)
+        self.out_folder = outpath
 
 ## TESTING
 if __name__ == "__main__":
         
-    from pm4py.visualization.petri_net import visualizer as pn_visualizer
-    from jmetal.operator.crossover import SBXCrossover
+    from jmetal.operator.crossover import SBXCrossover, CXCrossover
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
 

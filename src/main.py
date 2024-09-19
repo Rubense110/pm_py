@@ -16,20 +16,27 @@ class Log(Enum):
     OPEN      = 'test/Open/BPI_Challenge_2013_open_problems.xes'
 
 class Crossover:
-    def __init__(self, probability, distribution_index, perturbation):
-        self.probability = probability,
-        self.distribution_index = distribution_index, #base value 20
-        Crossover_map = {
+    def __init__(self, crossover_type, probability, distribution_index):
+        self.probability = probability
+        self.distribution_index = distribution_index #base value 20
+        
+        crossover_map = {
             'NullCrossover' :       self.__null_crossover(),
             'PMXCrossover' :        self.__pmx_crossover(),
-            'CXCrossover' :         self.__cxc_crossover(),
+            #'CXCrossover' :         self.__cxc_crossover(),
             'SBXCrossover' :        self.__sbx_crossover(),
-            'IntegerSBXCrossover' : self.__integer_sbx_crossover(),
-            'SPXCrossover' :        self.__spx_crossover(),
+            #'IntegerSBXCrossover' : self.__integer_sbx_crossover(),
+            #'SPXCrossover' :        self.__spx_crossover(),
             #'DifferentialEvolutionCrossover' :,
             #'CompositeCrossover' :,
-
         }
+
+        if crossover_type in crossover_map:
+            self.crossover = crossover_map[crossover_type]
+
+    def get_crossover(self):
+        return self.crossover
+
     def __null_crossover(self):
         return NullCrossover()
     
@@ -51,11 +58,17 @@ class Crossover:
     
 class Mutation:
     def __init__(self, mutation_type, probability, distribution_index, perturbation,  max_iterations):
+
+        self.probability = probability
+        self.distribution_index = distribution_index
+        self.perturbation = perturbation
+        self.max_iterations = max_iterations
+
         mutation_map = {
             'NullMutation' :                self.__null_mutation(),
-            'BitFlitMutation' :             self.__bit_flip_mutation(),
+            #'BitFlitMutation' :             self.__bit_flip_mutation(),
             'PolynomialMutation' :          self.__polynomial_mutation(),
-            'IntegerPolynomialMutation' :   self.__integer_polynomial_mutation(),
+            #'IntegerPolynomialMutation' :   self.__integer_polynomial_mutation(),
             'SimpleRandomMutation' :        self.__simple_random_mutation(),
             'UniformMutation' :             self.__uniform_mutation(),
             'NonUniformMutation' :          self.__non_uniform_mutation()
@@ -64,14 +77,12 @@ class Mutation:
             #'ScrambleMutation' : ScrambleMutation()
         }
 
-        self.probability = probability,
-        self.distribution_index = distribution_index,
-        self.perturbation = perturbation,
-        self.max_iterations = max_iterations
-
         if mutation_type in mutation_map:
             self.mutation = mutation_map[mutation_type]
 
+    def get_mutation(self):
+        return self.mutation
+    
     def __null_mutation(self):
         return NullMutation()
     
@@ -98,7 +109,6 @@ class Mutation:
                                   perturbation=self.perturbation,
                                   max_iterations=self.max_iterations)
 
-
 class TerminationCriterion:
     def __init__(self, criterion, amount, quality_indicator = FitnessValue(), expected_value = 0.5, degree = 1.0):
         criterion_map = {
@@ -116,6 +126,9 @@ class TerminationCriterion:
             self.criterion = criterion_map[criterion]
         else:
             raise ValueError(f"Criterio de terminación no válido: {criterion}")
+        
+    def get_criterion(self):
+        return self.criterion
         
     def __stop_by_evaluations(self):
         return StoppingByEvaluations(max_evaluations=self.amount)
@@ -139,32 +152,82 @@ class EvolutionaryAlgorithm:
         self.mutation = mutation
         self.crossover = crossover
         self.termination_criterion = termination_criterion
-        self.__init_kwargs()
+        self.init_kwargs()
     
-    def __init_kwargs(self):
+    def init_kwargs(self):
         self.kwargs = { 'population_size' :           self.population_size,
                         'offspring_population_size' : self.offspring_population_size,
                         'mutation':                   self.mutation ,
                         'crossover' :                 self.crossover,
                         'termination_criterion':      self.termination_criterion}
 
-    def 
+
+mutation_types = [
+    'NullMutation',
+    #'BitFlitMutation', Solutions are not binary
+    'PolynomialMutation',
+    #'IntegerPolynomialMutation',
+    'SimpleRandomMutation',
+    'UniformMutation',
+    'NonUniformMutation'
+]
+
+crossover_types = [
+    'NullCrossover',
+    'PMXCrossover',
+    #'CXCrossover', not wroking
+    'SBXCrossover',
+    #'IntegerSBXCrossover', Solutions are not integers
+    #'SPXCrossover' Solutions are not binary
+]
+
+
+class NSGAIIEvolutionaryAlgorithmTest(EvolutionaryAlgorithm):
+    def __init__(self, folder, log, population_size, offspring_population_size, max_evaluations):
+        
+        self.max_evaluations = max_evaluations
+        super().__init__(folder, log, population_size, offspring_population_size, None, None, None)
+    
+    def run(self):
+        """
+        Ejecuta el proceso de descubrimiento para cada combinación de tipo de mutación y crossover.
+        """
+        for mutation_type in mutation_types:
+            for crossover_type in crossover_types:
+                print(f"Running NSGA-II with Mutation: {mutation_type} and Crossover: {crossover_type}")
+                
+                mutation_operator = Mutation(mutation_type=mutation_type,
+                                             probability=1.0 / self.population_size, 
+                                             distribution_index=20, 
+                                             perturbation=0.1, max_iterations=100).get_mutation()
+                crossover_operator = Crossover(crossover_type=crossover_type,
+                                               probability=1.0,
+                                               distribution_index=20,).get_crossover()
+                termination_criterion = StoppingByEvaluations(max_evaluations=self.max_evaluations)
+                
+                self.mutation = mutation_operator
+                self.crossover = crossover_operator
+                self.termination_criterion = termination_criterion
+                self.init_kwargs()
+                
+                p_miner = Process_miner(miner_type='heuristic',
+                                        metrics='basic',
+                                        log=self.log, 
+                                        verbose=0)
+                p_miner.set_out_folder(self.folder)
+
+                nsgaii_params = self.kwargs
+                p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
 
 
 
-max_evaluations = 10000
-log = Log.CLOSED
+folder = "out/pruebas_5"
+log = Log.CLOSED.value
+population_size = 100
+offspring_population_size = 100
+max_evaluations = 1000
 
-p_miner = Process_miner(miner_type='heuristic',
-                        metrics='basic_useful_simple',
-                        log = log, 
-                        verbose = 0)
+nsgaii_ea_test = NSGAIIEvolutionaryAlgorithmTest(folder, log, population_size, offspring_population_size, max_evaluations)
+nsgaii_ea_test.run()
 
-nsgaii_params = {'population_size': 100,
-                 'offspring_population_size': 100,
-                 'mutation': PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
-                 'crossover': SBXCrossover(probability=1.0, distribution_index=20),
-                 'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
-
-p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
 
