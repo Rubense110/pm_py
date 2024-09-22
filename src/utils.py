@@ -3,8 +3,6 @@ from jmetal.core.problem import FloatSolution
 import matplotlib.pyplot as plt
 from typing import List
 
-# TO-DO show dominated sols on pareto in very light colors
-
 def calculate_pareto_front(solutions : List[FloatSolution]):
     front = []
     solution_objectives = np.array([sol.objectives for sol in solutions])

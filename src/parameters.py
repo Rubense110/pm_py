@@ -1,11 +1,9 @@
+import src.metrics as metrics
+
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
-from pm4py.algo.discovery.inductive.algorithm import Variants as InductiveVariants
-from pm4py.algo.discovery.inductive.variants.imf import IMFParameters
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 import pm4py
-
-import metrics
 
 class Heuristic_Parameters():
 

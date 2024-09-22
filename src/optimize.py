@@ -1,7 +1,7 @@
-import metrics
-import parameters
-import utils
-from problem import *
+import src.metrics as metrics
+import src.parameters as parameters
+import src.utils as utils
+from src.problem import *
 
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
@@ -89,6 +89,7 @@ class Optimizer(PM_miner_problem):
         self.algorithm.run()
         self.result = self.algorithm.result()
         self.non_dom_sols = utils.calculate_pareto_front(self.result)
+
 
     def get_result(self):
         '''
@@ -178,10 +179,9 @@ if __name__ == "__main__":
     from jmetal.util.termination_criterion import StoppingByEvaluations
 
 
-    print(help(Optimizer.discover()))
     max_evaluations = 1000
 
-    log = xes_importer.apply('test/Closed/BPI_Challenge_2013_closed_problems.xes')
+    log = xes_importer.apply('event_logs/Closed/BPI_Challenge_2013_closed_problems.xes')
     metrics_obj = metrics.Basic_Metrics()
 
     opt = Optimizer(heuristics_miner, log, metrics_obj)

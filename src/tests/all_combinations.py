@@ -1,4 +1,4 @@
-from process_miner import Process_miner
+from src.process_miner import Process_miner
 
 from jmetal.operator.mutation import *
 from jmetal.util.termination_criterion import *
@@ -10,10 +10,10 @@ from enum import Enum
 
 
 class Log(Enum):
-    CLOSED    ='test/Closed/BPI_Challenge_2013_closed_problems.xes'
-    FINANCIAL = 'test/Financial/BPI_Challenge_2012.xes'
-    INCIDENTS = 'test/Incidents/BPI_Challenge_2013_incidents.xes'
-    OPEN      = 'test/Open/BPI_Challenge_2013_open_problems.xes'
+    CLOSED    ='event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
+    FINANCIAL = 'event_logs/Financial/BPI_Challenge_2012.xes'
+    INCIDENTS = 'event_logs/Incidents/BPI_Challenge_2013_incidents.xes'
+    OPEN      = 'event_logs/Open/BPI_Challenge_2013_open_problems.xes'
 
 class Crossover:
     def __init__(self, crossover_type, probability, distribution_index):
@@ -212,20 +212,22 @@ class NSGAIIEvolutionaryAlgorithmTest(EvolutionaryAlgorithm):
                 
                 p_miner = Process_miner(miner_type='heuristic',
                                         metrics='basic',
-                                        log=self.log, 
-                                        verbose=0)
+                                        log=self.log)
+                
                 p_miner.set_out_folder(self.folder)
 
                 nsgaii_params = self.kwargs
                 p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
 
 
+ID = 8
+max_evaluations = 1000
 
-folder = "out/pruebas_8_1000"
+
+folder = f"src/tests/out/all_combinations/pruebas_{ID}_{max_evaluations}"
 log = Log.CLOSED.value
 population_size = 100
 offspring_population_size = 100
-max_evaluations = 1000
 
 nsgaii_ea_test = NSGAIIEvolutionaryAlgorithmTest(folder, log, population_size, offspring_population_size, max_evaluations)
 nsgaii_ea_test.run()
