@@ -1,8 +1,11 @@
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
 from pm4py.algo.discovery.inductive.algorithm import Variants as InductiveVariants
 from pm4py.algo.discovery.inductive.variants.imf import IMFParameters
-
+from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 import pm4py
+
+import metrics
 
 class Heuristic_Parameters():
 
@@ -36,6 +39,9 @@ class Heuristic_Parameters():
         HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: float
     }
 
+    def __init__(self, log):
+        self.adjust_heu_params(log)
+
     def adjust_heu_params(self, log):
         log = pm4py.convert_to_dataframe(log)
 
@@ -60,3 +66,14 @@ class Inductive_Parameters():
     param_type  = {'noise_threshold' : float,
                    'multi_processing': bool,
                    'disable_fallthroughs': bool}
+    
+miner_mapping = {
+    'inductive': inductive_miner, 
+    'heuristic': heuristics_miner,
+}
+
+metrics_mapping = {
+    'basic': metrics.Basic_Metrics(),
+    'basic_useful_simple': metrics.Basic_Metrics_Usefull_simple()
+}
+

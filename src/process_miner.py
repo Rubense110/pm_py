@@ -1,8 +1,6 @@
 # activate venv -> .\.venv\Scripts\activate
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
-from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
-from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 
@@ -11,22 +9,34 @@ import time
 import os
 
 import optimize
-import metrics 
+import parameters
 
 class Process_miner:
+    '''
+    A class for mining useful process models from event logs using various optimization algorithms.
+
+    The actual optimizacion process is abstracted to the class 'optimize.Optimizer()'.
+    Here the user can specify log files, the out folder for the petri net representation of the processes among others.
+    
+    The result of the execution is an approximation ot the pareto front of the optimal solutions returned from the optimizer.
+
+    Attributes
+    ----------
+    log_file : str
+        The path to the log file where results will be recorded.
+    out_folder : str
+        The output folder path where results and visualizations will be saved.
+    miner_type : str
+        The type of mining algorithm to be used (e.g., "Heuristic").
+    metrics_type : str
+        The string defining the type of metrics used for evaluation. Must be one of te implementations from the 'metrics' module.
+    log_name : str
+        The desired path to the log file, the file will be created if does not exist
+    '''
 
     log_file = 'doc/log.csv'
     out_folder = 'out/'
 
-    miner_mapping = {
-        'inductive': inductive_miner, 
-        'heuristic': heuristics_miner,
-    }
-
-    metrics_mapping = {
-        'basic': metrics.Basic_Metrics(),
-        'basic_useful_simple': metrics.Basic_Metrics_Usefull_simple()
-    }
 
     def __init__(self, miner_type, metrics,  log, verbose):
 
@@ -46,14 +56,14 @@ class Process_miner:
         self.star_time = time.time()
 
     def __get_miner_alg(self, miner):
-        if miner not in self.miner_mapping:
-            raise ValueError(f"Minero '{miner}' no está soportado. Los mineros disponibles son: {list(self.miner_mapping.keys())}")
-        return self.miner_mapping[miner]
+        if miner not in parameters.miner_mapping:
+            raise ValueError(f"Minero '{miner}' no está soportado. Los mineros disponibles son: {list(parameters.miner_mapping.keys())}")
+        return parameters.miner_mapping[miner]
 
     def __get_metrics_type(self, metrics):
-        if metrics not in self.metrics_mapping:
-            raise ValueError(f"Las métricas '{metrics}' no están soportadas. Las métricas disponibles son: {list(self.metrics_mapping.keys())}")
-        return self.metrics_mapping[metrics]
+        if metrics not in parameters.metrics_mapping:
+            raise ValueError(f"Las métricas '{metrics}' no están soportadas. Las métricas disponibles son: {list(parameters.metrics_mapping.keys())}")
+        return parameters.metrics_mapping[metrics]
     
     def __log(self):
         if os.path.isfile(self.log_file):
@@ -115,7 +125,7 @@ class Process_miner:
 ## TESTING
 if __name__ == "__main__":
         
-    from jmetal.operator.crossover import SBXCrossover, CXCrossover
+    from jmetal.operator.crossover import SBXCrossover
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
 

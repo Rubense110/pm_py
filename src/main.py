@@ -221,7 +221,7 @@ class NSGAIIEvolutionaryAlgorithmTest(EvolutionaryAlgorithm):
 
 
 
-folder = "out/pruebas_5"
+folder = "out/pruebas_8_1000"
 log = Log.CLOSED.value
 population_size = 100
 offspring_population_size = 100
