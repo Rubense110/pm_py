@@ -1,4 +1,5 @@
 # activate venv -> .\.venv\Scripts\activate 
+# PATH -> export PYTHONPATH="${PYTHONPATH}:/home/ruben/Documents/TFG/" ## echo $PYTHONPATH para verlo
 import src.optimize as optimize
 import src.parameters as parameters
 
@@ -180,7 +181,7 @@ class Process_miner:
 ## TESTING
 if __name__ == "__main__":
         
-    from jmetal.operator.crossover import SBXCrossover
+    from jmetal.operator.crossover import *
     from jmetal.operator.mutation import PolynomialMutation
     from jmetal.util.termination_criterion import StoppingByEvaluations
 
@@ -198,7 +199,7 @@ if __name__ == "__main__":
     nsgaii_params = {'population_size': 100,
                      'offspring_population_size': 100,
                      'mutation': PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
-                     'crossover': SBXCrossover(probability=1.0, distribution_index=20),
+                     'crossover': PMXCrossover(probability=1.0),
                      'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
     
     p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)

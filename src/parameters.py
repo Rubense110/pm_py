@@ -4,40 +4,48 @@ from pm4py.algo.discovery.heuristics.variants.classic import Parameters as Heuri
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 import pm4py
+from abc import abstractmethod
 
-class Heuristic_Parameters():
 
-    # Heuristic miner default params to begin discovery
-    base_params = {
-        HeuristicsParameters.DEPENDENCY_THRESH.value: 0.5,
-        HeuristicsParameters.AND_MEASURE_THRESH.value: 0.65,
-        HeuristicsParameters.MIN_ACT_COUNT.value: 1,
-        HeuristicsParameters.MIN_DFG_OCCURRENCES.value: 2,
-        HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH.value: 0.05,
-        HeuristicsParameters.LOOP_LENGTH_TWO_THRESH.value: 0.5,
-    }
+class Base_Parameters():
+    base_params = {}
+    param_range = {}
+    param_type = {}
 
-    # range of posible values for the parameters of the heurisic miner
-    param_range = {
-        HeuristicsParameters.DEPENDENCY_THRESH : [0, 1],
-        HeuristicsParameters.AND_MEASURE_THRESH : [0, 1],
-        HeuristicsParameters.MIN_ACT_COUNT: [1, 1000],
-        HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 1000],
-        HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: [0, 1],
-        HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
-    }
 
-    # Data type for each parameter
-    param_type = {
-        HeuristicsParameters.DEPENDENCY_THRESH : float,
-        HeuristicsParameters.AND_MEASURE_THRESH : float,
-        HeuristicsParameters.MIN_ACT_COUNT: int,
-        HeuristicsParameters.MIN_DFG_OCCURRENCES: int,
-        HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: float,
-        HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: float
-    }
+class Heuristic_Parameters(Base_Parameters):
 
     def __init__(self, log):
+        super().__init__()
+            # Heuristic miner default params to begin discovery
+        self.base_params = {
+            HeuristicsParameters.DEPENDENCY_THRESH.value: 0.5,
+            HeuristicsParameters.AND_MEASURE_THRESH.value: 0.65,
+            HeuristicsParameters.MIN_ACT_COUNT.value: 1,
+            HeuristicsParameters.MIN_DFG_OCCURRENCES.value: 2,
+            HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH.value: 0.05,
+            HeuristicsParameters.LOOP_LENGTH_TWO_THRESH.value: 0.5,
+        }
+
+        # range of posible values for the parameters of the heurisic miner
+        self.param_range = {
+            HeuristicsParameters.DEPENDENCY_THRESH : [0, 1],
+            HeuristicsParameters.AND_MEASURE_THRESH : [0, 1],
+            HeuristicsParameters.MIN_ACT_COUNT: [1, 1000],
+            HeuristicsParameters.MIN_DFG_OCCURRENCES: [1, 1000],
+            HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: [0, 1],
+            HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: [0, 1]
+        }
+
+        # Data type for each parameter
+        self.param_type = {
+            HeuristicsParameters.DEPENDENCY_THRESH : float,
+            HeuristicsParameters.AND_MEASURE_THRESH : float,
+            HeuristicsParameters.MIN_ACT_COUNT: int,
+            HeuristicsParameters.MIN_DFG_OCCURRENCES: int,
+            HeuristicsParameters.DFG_PRE_CLEANING_NOISE_THRESH: float,
+            HeuristicsParameters.LOOP_LENGTH_TWO_THRESH: float
+        }
         self.adjust_heu_params(log)
 
     def adjust_heu_params(self, log):
@@ -51,20 +59,22 @@ class Heuristic_Parameters():
 
         #print(self.param_range)
 
-class Inductive_Parameters():
+class Inductive_Parameters(Base_Parameters):
+    def __init__(self) -> None:
+        super().__init__()
     
-    base_params = {'noise_threshold' : 0,
-                   'multi_processing': False,
-                   'disable_fallthroughs': False}
-    
-    param_range = {'noise_threshold' : [0, 1],
-                   'multi_processing': [False, True],
-                   'disable_fallthroughs': [False, True]}
-    
-    param_type  = {'noise_threshold' : float,
-                   'multi_processing': bool,
-                   'disable_fallthroughs': bool}
-    
+        self.base_params = {'noise_threshold' : 0,
+                            'multi_processing': False,
+                            'disable_fallthroughs': False}
+        
+        self.param_range = {'noise_threshold' : [0, 1],
+                            'multi_processing': [False, True],
+                            'disable_fallthroughs': [False, True]}
+        
+        self.param_type  = {'noise_threshold' : float,
+                            'multi_processing': bool,
+                            'disable_fallthroughs': bool}
+            
 miner_mapping = {
     'inductive': inductive_miner, 
     'heuristic': heuristics_miner,

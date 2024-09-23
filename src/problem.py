@@ -1,5 +1,5 @@
 import src.metrics as metrics
-
+import src.parameters as parameters
 
 import random
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
@@ -9,9 +9,31 @@ from jmetal.core.problem import FloatProblem, FloatSolution
 
 
 class PM_miner_problem(FloatProblem):
+    '''
+    Custom optimization problem for process mining. The goal of this problem class is to
+    tune the hiperparameters of the chosen process mining algorithm in order to find useful
+    process models, measuring them following the specified metrics.
+
+    This class extends 'FloatProblem' from the Jmetal metaheuristic optimization framework..
+
+    Attributes
+    ----------
+    miner : pm4py.miner
+        The selected process mining algorithm (e.g., Heuristic Miner, Inductive Miner).
+    log : object
+        The event log loaded using pm4py (in XES format).
+    metrics_obj : Metrics
+        An object that defines how to calculate the fitness of a mined process model. 
+        Must be one implementation from the 'metrics' module.
+    parameters_info : parameters.BaseParameters
+        Contains relevant information about the hiperparameters of the chosen miner such as
+        their value range and data type.
+
+
+    '''
     current_iteration = 0
 
-    def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info):
+    def __init__(self, miner, log, metrics_obj: metrics.Metrics, parameters_info: parameters.Base_Parameters):
         
         super(PM_miner_problem, self).__init__()
 
