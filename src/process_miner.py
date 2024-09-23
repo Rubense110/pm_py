@@ -11,7 +11,7 @@ import os
 
 class Process_miner:
     '''
-    A class for mining useful process models from event logs using various optimization algorithms.
+    A class with the objective of mining useful process models from event logs using various optimization algorithms.
 
     The actual optimizacion process is abstracted to the class 'optimize.Optimizer()'.
     Here the user can specify log files, the out folder for the petri net representation of the processes among others.
