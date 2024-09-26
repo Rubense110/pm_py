@@ -68,12 +68,12 @@ class Inductive_Parameters(Base_Parameters):
                             'disable_fallthroughs': False}
         
         self.param_range = {'noise_threshold' : [0, 1],
-                            'multi_processing': [False, True],
-                            'disable_fallthroughs': [False, True]}
+                            'multi_processing': [0, 1],
+                            'disable_fallthroughs': [0, 1]}
         
         self.param_type  = {'noise_threshold' : float,
-                            'multi_processing': bool,
-                            'disable_fallthroughs': bool}
+                            'multi_processing': float,
+                            'disable_fallthroughs': float}
             
 miner_mapping = {
     'inductive': inductive_miner, 

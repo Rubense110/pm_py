@@ -73,6 +73,8 @@ class PM_miner_problem(FloatProblem):
             petri, initial_marking, final_marking = self.miner.apply(self.log, parameters= params)
         elif self.miner == inductive_miner:
             inductive_variant = inductive_miner.Variants.IMf if params["noise_threshold"] > 0 else inductive_miner.Variants.IM
+            params["multi_processing"] = True if params["multi_processing"] > 0.5 else False
+            params["disable_fallthroughs"] = True if params["disable_fallthroughs"] > 0.5 else False
             process_tree = self.miner.apply(self.log, variant = inductive_variant,  parameters= params )
             petri, initial_marking, final_marking = convert_to_petri_net(process_tree)    
         return petri, initial_marking, final_marking

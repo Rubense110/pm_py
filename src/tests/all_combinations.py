@@ -210,7 +210,7 @@ class NSGAIIEvolutionaryAlgorithmTest(EvolutionaryAlgorithm):
                 self.termination_criterion = termination_criterion
                 self.init_kwargs()
                 
-                p_miner = Process_miner(miner_type='heuristic',
+                p_miner = Process_miner(miner_type='inductive',
                                         metrics='basic',
                                         log=self.log)
                 
@@ -220,7 +220,7 @@ class NSGAIIEvolutionaryAlgorithmTest(EvolutionaryAlgorithm):
                 p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
 
 
-ID = 8
+ID = 10
 max_evaluations = 1000
 
 
