@@ -1,15 +1,17 @@
-# activate venv -> .\.venv\Scripts\activate 
+# activate venv -> .\.venv\Scripts\activate --- source .venv/bin/activate
 # PATH -> export PYTHONPATH="${PYTHONPATH}:/home/ruben/Documents/TFG/" ## echo $PYTHONPATH para verlo
-import src.optimize as optimize
-import src.parameters as parameters
+import optimize
+import parameters
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
+from jmetal_fixed import NSGAIII
+from jmetal.algorithm.multiobjective.spea2 import SPEA2
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 import time
 import os
 
-class Process_miner:
+class ProcessMiner:
     '''
     A class with the objective of mining useful process models from event logs using various optimization algorithms.
 
@@ -34,6 +36,9 @@ class Process_miner:
 
     log_file = 'doc/log.csv'
     out_folder = 'out/'
+    available_opts = {'NSGAII' : NSGAII,
+                      'NSGAIII' : NSGAIII,
+                      'SPEA2': SPEA2}
 
 
     def __init__(self, miner_type, metrics,  log):
@@ -46,7 +51,6 @@ class Process_miner:
         self.log = xes_importer.apply(log)
         self.metrics_obj = self.__get_metrics_type(metrics)
 
-        ## TO-DO -> Manage exception for non supported algos
         self.opt = optimize.Optimizer(self.miner, self.log, self.metrics_obj)
 
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
@@ -83,13 +87,13 @@ class Process_miner:
         if os.path.isfile(self.log_file):
             with open(self.log_file, 'a') as log:
                 runtime = str(self.end_time - self.star_time)
-                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.__extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
+                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
         else:
             with open(self.log_file, 'w') as log:
                 log.write('Timestamp,Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
             self.__log()
 
-    def __extract_params(self):
+    def extract_params(self):
         '''
         Extracts the parameters of the optimization algorithm (e.g. NSGAII) into strings
 
@@ -103,7 +107,7 @@ class Process_miner:
         dicc = dict()
         for (attr_name, attr_value) in self.params.items():
             if hasattr(attr_value, '__dict__'):
-                dicc[attr_name] = [attr_value.__class__, attr_value.__dict__]
+                dicc[attr_name] = [f"{attr_value.__class__.__module__}.{attr_value.__class__.__name__}", attr_value.__dict__]
             else:
                 dicc[attr_name] = attr_value
         return dicc
@@ -138,7 +142,7 @@ class Process_miner:
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
 
-    def discover(self, algorithm_class, store=True, **params):
+    def discover(self, algorithm_name, store=True, **params):
         '''
         Performs the hiperparameter optimization of the miner specified when instanciating
         the class using the algorithm class and its hiperparameters entered as attributes.
@@ -149,12 +153,17 @@ class Process_miner:
 
         Parameters
         ----------
-        algorithm_class : class
-            The class of the optimization algorithm to be used. This class must be from the Jmetal optimization framework.
+        algorithm_name : class
+            The name of the optimization algorithm to be used. Must be one of the avalilable names.
         **params : dict, optional
             Additional keyword arguments representing the hyperparameters to be passed to the algorithm class.
         
         '''
+        if algorithm_name not in self.available_opts:
+            return ValueError(f"Optmizador '{algorithm_name}' no está soportado. Los optmizadores disponibles son: {list(self.available_opts.keys())}")
+        else:
+            algorithm_class = self.available_opts[algorithm_name]
+
         self.params = params
         self.opt.discover(algorithm_class=algorithm_class, **params)
         self.opt_type = algorithm_class.__name__
@@ -192,7 +201,7 @@ if __name__ == "__main__":
     log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'event_logs/Financial/BPI_Challenge_2012.xes'
     
-    p_miner = Process_miner(miner_type='heuristic',
+    p_miner = ProcessMiner(miner_type='heuristic',
                             metrics='basic',
                             log = log,)
     
@@ -202,4 +211,4 @@ if __name__ == "__main__":
                      'crossover': PMXCrossover(probability=1.0),
                      'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
     
-    p_miner.discover(algorithm_class=NSGAII, **nsgaii_params)
+    p_miner.discover(algorithm_name='NSGAII', **nsgaii_params)

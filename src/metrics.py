@@ -98,7 +98,7 @@ class Basic_Metrics(Metrics):
     def get_labels(self):
         return self.labels
 
-class Basic_Metrics_Usefull_simple(Basic_Metrics):
+class Basic_Metrics_Usefull_Simple(Basic_Metrics):
 
     ## RULES
     NSFE_TRESHOLD_MORE_THAN = 1.5

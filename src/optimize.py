@@ -1,14 +1,14 @@
-import src.metrics as metrics
-import src.parameters as parameters
-import src.utils as utils
-from src.problem import *
+import metrics 
+import parameters 
+import utils 
+import problem
 
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 
 
-class Optimizer(PM_miner_problem):
+class Optimizer(problem.PM_miner_problem):
     '''
     This class performs hyperparameter optimization of process mining algorithms using different techniques implemented
     on the Jmetal metaheuristic algorithm optimization framework
@@ -46,14 +46,14 @@ class Optimizer(PM_miner_problem):
 
         Returns
         -------
-        parameters.BaseParameters : An instance of the hyperparameters class corresponding to the specified miner.
+        parameters.BaseParametersConfig : An instance of the hyperparameters class corresponding to the specified miner.
 
         '''
         if miner == heuristics_miner:
-            params = parameters.Heuristic_Parameters(log)
+            params = parameters.HeuristicParametersConfig(log)
             return params
         elif miner == inductive_miner:
-            params = parameters.Inductive_Parameters()
+            params = parameters.InductiveParametersConfig()
             return params
         else:
             raise ValueError(f"Miner '{miner}' not supported. Available miners are: heuristic, inductive")
@@ -105,7 +105,7 @@ class Optimizer(PM_miner_problem):
         -------
         FloatSolution : The best solution found by the algorithm
         '''
-        return self.result[0]  # TO-DO
+        return self.get_non_dominated_sols()[0]  # TO-DO
 
     def get_petri_net(self, sol=None):
         '''
