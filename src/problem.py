@@ -68,8 +68,8 @@ class PM_miner_problem(FloatProblem):
         and then uses the specified metrics to evaluate it.
         '''
         params = {key: solution.variables[idx] for idx, key in enumerate(self.parameters_info.param_range.keys())}
-        petri, _, _ = self._create_petri_net_sol(params)
-        solution.objectives = self.metrics_obj.get_metrics_array(petri)
+        petri, im, fm = self._create_petri_net_sol(params)
+        solution.objectives = self.metrics_obj.get_metrics_array(petri, im, fm, self.log)
         solution.n_of_objectives = self.n_of_objectives
         
         return solution

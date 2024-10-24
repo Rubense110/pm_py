@@ -1,5 +1,9 @@
 from abc import abstractmethod
 from pm4py.objects.petri_net.obj import PetriNet
+from pm4py.conformance import fitness_alignments
+from pm4py.conformance import precision_alignments
+from pm4py.conformance import fitness_token_based_replay
+from pm4py.conformance import precision_token_based_replay
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -72,7 +76,7 @@ class Basic_Metrics(Metrics):
         self.n_of_metrics = len(self.metrics_array)
         self.labels = ['n_places', 'n_arcs', 'n_transitions', 'cycl_complx', 'ratio', 'joins', 'splits']
 
-    def get_metrics_array(self, petri: PetriNet):
+    def get_metrics_array(self, petri: PetriNet, im, fm, log):
 
                 # basic metrics
         n_places = len(petri.places)
@@ -97,6 +101,34 @@ class Basic_Metrics(Metrics):
     
     def get_labels(self):
         return self.labels
+    
+class Basic_Conformance(Basic_Metrics):
+
+    def __init__(self):
+        super().__init__()
+
+        fitness = 0
+        precission = 0
+
+        self.metrics_array = np.append(self.metrics_array,[fitness, precission])
+        self.n_of_metrics = len(self.metrics_array)
+        self.labels.extend(['fitness', 'precission'])
+
+    def get_metrics_array(self, petri, im, fm, events_log):
+        basic_metrics =  super().get_metrics_array(petri, im, fm, events_log)
+
+        #fitness_alignment_dict = fitness_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        #fitness_alignment = fitness_alignment_dict['average_trace_fitness']
+        fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        fitness_token = fitness_token_dict['average_trace_fitness']
+
+        #precission_alignment = precision_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        precission_token = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+
+
+        basic_metrics = np.append(basic_metrics, [-fitness_token, -precission_token]) ## estamos minimizando 
+        self.metrics_array = basic_metrics
+        return self.metrics_array
 
 class Basic_Metrics_Usefull_Simple(Basic_Metrics):
 
@@ -112,7 +144,7 @@ class Basic_Metrics_Usefull_Simple(Basic_Metrics):
         #basic_useful_metrics_labels = ["is_ap", "NSFE", "GM"]
         #self.labels.extend(basic_useful_metrics_labels)
 
-    def get_metrics_array(self, petri: PetriNet):
+    def get_metrics_array(self, petri: PetriNet, im, fm, log):
         petri_graph = self.__convert_petri_to_graph(petri)
         #self.__plot_petri_graph(petri_graph)
 
@@ -123,7 +155,7 @@ class Basic_Metrics_Usefull_Simple(Basic_Metrics):
         #print(NSFE, IS_AP, GM)
 
         if  IS_AP or  self.__check_nsfe_interval(NSFE) or  self.__check_gm_interval(GM):
-            return super().get_metrics_array(petri)
+            return super().get_metrics_array(petri, im, fm, log)
         else:
             penalty = 1e6
             return np.array([penalty] * self.n_of_metrics)

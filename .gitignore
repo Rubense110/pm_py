@@ -4,4 +4,4 @@
 *.to
 /.venv
 /.env
-pruebas.py
+*.pyc

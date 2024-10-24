@@ -196,13 +196,13 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 1000
+    max_evaluations = 100
 
     log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'event_logs/Financial/BPI_Challenge_2012.xes'
     
     p_miner = ProcessMiner(miner_type='heuristic',
-                            metrics='basic',
+                            metrics='basic_conformance',
                             log = log,)
     
     nsgaii_params = {'population_size': 100,
