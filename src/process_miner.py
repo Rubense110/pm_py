@@ -196,12 +196,13 @@ if __name__ == "__main__":
 
 
 
-    max_evaluations = 100
+    max_evaluations = 1000
+
 
     log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
     #log = 'event_logs/Financial/BPI_Challenge_2012.xes'
     
-    p_miner = ProcessMiner(miner_type='heuristic',
+    p_miner = ProcessMiner(miner_type='inductive',
                             metrics='basic_conformance',
                             log = log,)
     

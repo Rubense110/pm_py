@@ -20,7 +20,6 @@ def calculate_pareto_front(solutions : List[FloatSolution]):
     return front
 
 def determine_color(index):
-    print(index)
     colors = ['red', 'green', 'black', 'darkslategray', 'purple', 'orange']
     if index >= len(colors):
         index = index - len(colors)
@@ -35,9 +34,6 @@ def plot_pareto_front(solutions : List[FloatSolution], axis_labels, title, filen
 
     pareto_front_objectives = [[abs(value) for value in sol] for sol in pareto_front_objectives]
     dominated_solutions_objectives = [[abs(value) for value in sol] for sol in dominated_solutions_objectives]
-
-    print(pareto_front_objectives)
-    print(dominated_solutions_objectives)
     
     plt.figure(figsize=(10, 6))
     x = np.arange(len(pareto_front_objectives[0]))
