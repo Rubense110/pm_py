@@ -52,3 +52,5 @@ Se pueden utilizar los mineros `Heurístico` e `Inductivo`
 
 ## Funcionamiento
 Para ejecutar el proyecto, ejecutar el fichero `process_miner.py`. Al final del mismo se pueden cambiar los parámetros según se considere. 
+
+Al terminarse una ejecución, en la carpeta `out` aparecerá un nuevo directorio con los resultados de la ejecución.
