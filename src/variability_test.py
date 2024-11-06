@@ -1,5 +1,6 @@
 import os 
 import time
+import re
 
 from process_miner import ProcessMiner
 
@@ -8,7 +9,7 @@ from jmetal.operator.mutation import PolynomialMutation
 from jmetal.util.termination_criterion import StoppingByEvaluations
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
-
+from pm4py.objects.petri_net.obj import PetriNet
 
 class VariabilityTest():
         
@@ -46,22 +47,29 @@ class VariabilityTest():
             p_miner.discover(algorithm_name=self.opt_type, **nsgaii_params,store=False)
 
             epoch_result = p_miner.opt.get_pareto_front_petri_nets() ##petri nets pareto
-            self.add_to_result_set(epoch_result)
+            self.results_set.extend(epoch_result)
             self.test_dict[str(epoch)] = epoch_result
 
         end_time = time.time()
 
+        self.set_unique_petri_nets()
+
+        print(self.results_set, "\n")
+        for i in self.results_set:
+            print(i, type(i))
+
         print(len(self.results_set))
-        self.results_set = set(self.results_set)
+
         for i in self.results_set:
             print(i, "\n\n")
         self.runtime = str(end_time - start_time)
 
         #print(self.results_set)
         #print(self.test_dict)
-
+        
         self.save()
         self.save_to_log()
+
 
     def save(self):
         outpath = f'{self.out_folder}/{self.local_time}-{self.epochs}-{self.iterations}-{self.log_name}'
@@ -82,18 +90,6 @@ class VariabilityTest():
             os.makedirs(set_path, exist_ok=True)
             pn_visualizer.save(gviz, f'{set_path}/petri_pareto_{index}.png')
 
-    def add_to_result_set(self,epoch_result):
-        if len(self.results_set) == 0:
-            self.results_set = epoch_result
-        else:
-            for petri in self.results_set:
-                if self.check_petri_diff():
-                    self.results_set.append(petri)
-    
-    def check_petri_diff(self):
-        
-
-
     def save_to_log(self):
         '''
         Stores relevant information about the execution (e.g. runtime, log name, miner type, etc)
@@ -105,6 +101,35 @@ class VariabilityTest():
             with open(self.log_file, 'w') as log:
                 log.write('Timestamp,Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
             self.save_to_log()
+
+    def are_petri_nets_equal(self, net1: PetriNet, net2: PetriNet) -> bool:
+        
+        # Comparar el número de lugares
+        if len(net1.places) != len(net2.places):
+            return False
+
+        # Comparar el número de transiciones
+        print(len(net1.transitions),len(net2.transitions),"\n\n")
+        if len(net1.transitions) != len(net2.transitions):
+            return False
+
+        # Comparar el número de arcos
+        if len(net1.arcs) != len(net2.arcs):
+            return False
+
+        # Comparar los lugares
+        net1.places != net2.places
+
+        return True
+
+    def set_unique_petri_nets(self):
+        unique_nets = []
+        
+        for (net,im,fm) in self.results_set:
+            if not any(self.are_petri_nets_equal(net, unique_net) for (unique_net,_,_) in unique_nets):
+                unique_nets.append((net,im,fm))
+
+        self.results_set = unique_nets
 
 if __name__ == "__main__":
 

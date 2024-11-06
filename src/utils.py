@@ -2,6 +2,9 @@ import numpy as np
 from jmetal.core.problem import FloatSolution
 import matplotlib.pyplot as plt
 from typing import List
+import sys
+import os
+from contextlib import contextmanager
 
 def calculate_pareto_front(solutions : List[FloatSolution]):
     front = []
@@ -50,6 +53,21 @@ def plot_pareto_front(solutions : List[FloatSolution], axis_labels, title, filen
     plt.xticks(x, axis_labels)
     plt.grid()
     plt.savefig(filename)
+
+
+@contextmanager
+def silence_stdout():
+    # Guardar el stdout original
+    original_stdout = sys.stdout
+    # Abrir un archivo nulo para redirigir la salida
+    sys.stdout = open(os.devnull, 'w')
+    try:
+        yield
+    finally:
+        # Restaurar el stdout original
+        sys.stdout.close()
+        sys.stdout = original_stdout
+
 
 if __name__ == "__main__":
     ## TESTING

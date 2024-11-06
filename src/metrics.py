@@ -7,6 +7,7 @@ from pm4py.conformance import precision_token_based_replay
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from utils import silence_stdout
 
 class Metrics():
 
@@ -119,11 +120,13 @@ class Basic_Conformance(Basic_Metrics):
 
         #fitness_alignment_dict = fitness_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
         #fitness_alignment = fitness_alignment_dict['average_trace_fitness']
-        fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        with silence_stdout():
+            fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
         fitness_token = fitness_token_dict['average_trace_fitness']
 
         #precission_alignment = precision_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
-        precission_token = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        with silence_stdout():
+            precission_token = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
 
 
         basic_metrics = np.append(basic_metrics, [-fitness_token, -precission_token]) ## estamos minimizando 

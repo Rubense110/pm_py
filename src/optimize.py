@@ -6,7 +6,8 @@ import problem
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
-
+from jmetal.util.observer import PlotFrontToFileObserver, WriteFrontToFileObserver
+import os
 
 class Optimizer(problem.PM_miner_problem):
     '''
@@ -29,8 +30,9 @@ class Optimizer(problem.PM_miner_problem):
     
     '''
 
-    def __init__(self, miner, log, metrics_obj):
+    def __init__(self, miner, log, metrics_obj, out_folder):
         parameters_info = self.__get_parameters(miner, log)
+        self.out_folder = out_folder
         super().__init__(miner, log, metrics_obj, parameters_info)
     
     def __get_parameters(self, miner, log):
@@ -86,6 +88,7 @@ class Optimizer(problem.PM_miner_problem):
             Additional keyword arguments representing the hyperparameters to be passed to the algorithm class.
         '''
         self.algorithm = algorithm_class(problem=self, **params)
+        self.algorithm.observable.register(observer=WriteFrontToFileObserver(os.path.join(self.out_folder, "FRONTS")))
         self.algorithm.run()
         self.result = self.algorithm.result()
         self.non_dom_sols = utils.calculate_pareto_front(self.result)
