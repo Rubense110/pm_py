@@ -212,14 +212,14 @@ if __name__ == "__main__":
     #log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
     log = 'event_logs/Financial/BPI_Challenge_2012.xes'
     
-    p_miner = ProcessMiner(miner_type='inductive',
-                            metrics='basic_conformance',
+    p_miner = ProcessMiner(miner_type='heuristic',
+                            metrics='basic',
                             log = log,)
     
     nsgaii_params = {'population_size': 100,
                      'offspring_population_size': 100,
                      'mutation': PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
-                     'crossover': PMXCrossover(probability=1.0),
+                     'crossover': SBXCrossover(probability=1.0, distribution_index=20),
                      'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
     
     p_miner.discover(algorithm_name='NSGAII', **nsgaii_params)
