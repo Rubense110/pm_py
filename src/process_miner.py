@@ -210,8 +210,9 @@ if __name__ == "__main__":
 
 
     #log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
-    log = 'event_logs/Financial/BPI_Challenge_2012.xes'
-    
+    #log = 'event_logs/Financial/BPI_Challenge_2012.xes'
+    log = 'event_logs/Open/BPI_Challenge_2013_open_problems.xes'
+
     p_miner = ProcessMiner(miner_type='heuristic',
                             metrics='basic',
                             log = log,)
