@@ -19,7 +19,8 @@ class Clustering():
     def __init__(self, metric, clustering_alg, data_path, out_path):
         self.data_path = data_path
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
-        self.out_path = f'{out_path}/{self.local_time}'
+        data_filename = data_path.split('_')[-1].replace('csv', '')
+        self.out_path = f"{out_path}/{self.local_time}-{data_filename}"
         self.data_df = self.normalize_data(pd.read_csv(data_path))
         self.metric = metric
         self.clustering_alg =clustering_alg
@@ -208,9 +209,16 @@ class Clustering():
         plt.savefig(f'{self.out_path}/{filename}.png')
         plt.close()
 
-clust = Clustering(metric='manhattan',
-                   clustering_alg='kmeans',
-                   data_path='src/results_objectives.csv',
-                   out_path='src/tests/out/clustering')
+if __name__ == "__main__":
 
-clust.cluster_test(max_clusters=10)
+    closed = 'src/results_objectives_closed.csv'
+    financial = 'src/results_objectives_financial.csv'
+    open = 'src/results_objectives_open.csv'
+    incidents = 'src/results_objectives_incidents.csv'
+
+    clust = Clustering(metric='manhattan',
+                    clustering_alg='kmeans',
+                    data_path=incidents,
+                    out_path='src/tests/out/clustering')
+
+    clust.cluster_test(max_clusters=10)
