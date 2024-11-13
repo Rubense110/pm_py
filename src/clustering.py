@@ -1,127 +1,127 @@
 from scipy.spatial.distance import pdist, squareform
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import directed_hausdorff
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import silhouette_samples
+from yellowbrick.cluster import KElbowVisualizer
 import scipy.cluster.hierarchy as shc
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
-import os
-
-def minimum_pairwise_distance(cluster_a, cluster_b):
-    # Calcula la distancia mínima entre puntos de dos clusters
-    min_dist = np.min([np.sum(np.abs(a - b)) for a in cluster_a for b in cluster_b])
-    return min_dist
-
-def averaged_hausdorff_distance(cluster_a, cluster_b):
-    # Cluster_a y cluster_b deben ser subconjuntos del DataFrame original
-    ahd = (directed_hausdorff(cluster_a, cluster_b)[0] + directed_hausdorff(cluster_b, cluster_a)[0]) / 2
-    return ahd
-
-def normalize_data(df: pd.DataFrame):
-    scaler = StandardScaler()
-    df_normalized = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
-    return df_normalized
-
-def clustering(objs_path: str):
-        
-    df = pd.read_csv(objs_path)
-    df.drop_duplicates(inplace=True)
-    df['fitness'] = df['fitness'].apply(abs)
-    df['precission'] = df['precission'].apply(abs)
-    
-    df = normalize_data(df)
-
-    modelo_clustering = AgglomerativeClustering(linkage='single', metric='manhattan', n_clusters=4)
-    etiquetas_clusters = modelo_clustering.fit_predict(df)
-
-    df['Cluster'] = etiquetas_clusters
-
-    # Calcular AHD entre todos los pares de clusters
-    clusters_unicos = df['Cluster'].unique()
-    ahd_matriz = pd.DataFrame(index=clusters_unicos, columns=clusters_unicos)
-
-    for i in clusters_unicos:
-        for j in clusters_unicos:
-            if i != j:
-                ahd_matriz.loc[i, j] = averaged_hausdorff_distance(df[df['Cluster'] == i], df[df['Cluster'] == j])
-
-    # Calcular MPD entre todos los pares de clusters
-    mpd_matriz = pd.DataFrame(index=clusters_unicos, columns=clusters_unicos)
-
-    for i in clusters_unicos:
-        for j in clusters_unicos:
-            if i != j:
-                mpd_matriz.loc[i, j] = minimum_pairwise_distance(df[df['Cluster'] == i].values, df[df['Cluster'] == j].values)
-
-    plot_PCA(df)
-    plot_dendogram(df)
-    print(df.head())
-
-    
-
-def plot_PCA(df: pd.DataFrame, filename = 'cluster'):
-    # Reducir a 2 dimensiones con PCA
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(df.drop(columns=['Cluster']))
-
-    # Agregar los resultados de PCA al DataFrame
-    df['PCA1'] = X_pca[:, 0]
-    df['PCA2'] = X_pca[:, 1]
-
-    # Visualizar los clusters en el espacio reducido
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(x=df['PCA1'], y=df['PCA2'], hue=df['Cluster'], palette='bright', s=60)
-    plt.title("Clusters visualizados en el espacio PCA")
-    plt.xlabel("PCA1")
-    plt.ylabel("PCA2")
-    plt.legend(title='Cluster')
-    plt.savefig(filename)
-
-def plot_dendogram(df: pd.DataFrame, filename = 'dendogram'):
-    plt.figure(figsize=(10, 6))
-    plt.title("Dendograma")
-    shc.dendrogram(shc.linkage(df, method='ward'))
-    plt.savefig(filename)
-
-
-    
-#clustering(objs_path='src/results_objectives.csv')
-
+import os    
 
 class Clustering():
     
-    def __init__(self, max_clusters, metric, data_path, out_path):
-        self.max_clusters = max_clusters
+    def __init__(self, metric, clustering_alg, data_path, out_path):
         self.data_path = data_path
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
         self.out_path = f'{out_path}/{self.local_time}'
         self.data_df = self.normalize_data(pd.read_csv(data_path))
         self.metric = metric
+        self.clustering_alg =clustering_alg
     
         os.makedirs(self.out_path, exist_ok=True)
+
+    def cluster_optimal(self):
+        n_clusters = self.optimal_cluster_size
+
+        if self.clustering_alg == 'aglomerative':
+                model = AgglomerativeClustering(linkage='single', 
+                                                metric=self.metric, 
+                                                n_clusters = n_clusters)
+                predict = model.fit_predict(self.data_df)
+                
+        elif self.clustering_alg == 'kmeans':
+                model = KMeans(n_clusters=n_clusters, 
+                               init="k-means++", 
+                               n_init=10,
+                               max_iter=280, 
+                               random_state=42)
+                predict = model.fit_predict(self.data_df)
         
-    def cluster(self):
+        labeled_data = self.data_df.copy()
+        labeled_data['Cluster'] = predict
+
+        canonical_representatives = self.get_canonical(labeled_data)
+
+        for cluster_num in range(n_clusters):
+            cluster_elements = labeled_data[labeled_data['Cluster'] == cluster_num]
+            print(f"Clúster {cluster_num}:")
+            print(cluster_elements)
+            print("\n" + "="*40 + "\n")
+
+        print("\n" + "#"*40)
+        print("Representantes canónicos de cada clúster:")
+        print("#"*40 + "\n")
+        for cluster_id in sorted(canonical_representatives.keys()):  # Ordenar las claves antes de imprimir
+            representative = canonical_representatives[cluster_id]
+            print(f"Clúster {cluster_id} - Representante:\n{representative}")
+            print("\n" + "="*40 + "\n")
+
+        
+    def cluster_test(self, max_clusters):
         metrics = list()
-        for n_clusters in range(2, self.max_clusters+1):
-            model_ac = AgglomerativeClustering(linkage='single', metric=self.metric, n_clusters = n_clusters)
-            predict = model_ac.fit_predict(self.data_df)
+        distortions = list()
+
+        self.elbow_visualization(max_clusters)
+        for n_clusters in range(2, max_clusters+1):
+
+            if self.clustering_alg == 'aglomerative':
+                model = AgglomerativeClustering(linkage='single', 
+                                                metric=self.metric, 
+                                                n_clusters = n_clusters)
+                predict = model.fit_predict(self.data_df)
+                
+            elif self.clustering_alg == 'kmeans':
+                model = KMeans(n_clusters=n_clusters, 
+                               init="k-means++", 
+                               n_init=10,
+                               max_iter=280, 
+                               random_state=42)
+                predict = model.fit_predict(self.data_df)
+                distortion = model.inertia_
+                distortions.append(distortion)
+            
             labels = pd.DataFrame(predict, columns=['Labels'], index=self.data_df.index)
-            self.plot_silhouettes_and_objects(labels, predict, filename=f'silhouette_objects_{n_clusters}')
+            self.plot_silhouettes_and_objects(labels, predict, n_clusters, filename=f'silhouette_objects_{n_clusters}')
             metrics.append(silhouette_score(self.data_df, labels['Labels']))
-        self.silhouette_result(metrics)
+
+        self.silhouette_result(metrics, max_clusters)
+        if self.clustering_alg == 'kmeans':
+            self.kmeans_distortion(distortions, max_clusters)
+
+        self.cluster_optimal()
+
+    def get_canonical(self, labeled_data):
+        representatives = {}
+        clusters = labeled_data['Cluster'].unique()
+
+        for cluster_id in clusters:
+            cluster_data = labeled_data[labeled_data['Cluster'] == cluster_id]
+            representative = cluster_data.sample(n=1).iloc[0]
+            representatives[cluster_id] = representative
+
+        return representatives
+
+    def elbow_visualization(self, max_clusters, filename = 'elbow'):
+        if self.clustering_alg == 'aglomerative':
+            Elbow_M = KElbowVisualizer(AgglomerativeClustering(), k=max_clusters)
+        elif self.clustering_alg == 'kmeans':
+            Elbow_M = KElbowVisualizer(KMeans(), k=max_clusters)
+        Elbow_M.fit(self.data_df)
+        self.optimal_cluster_size = Elbow_M.elbow_value_
+        Elbow_M.show(f'{self.out_path}/{filename}.png')
         
     def normalize_data(self, df: pd.DataFrame):
         scaler = StandardScaler()
         df_normalized = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
         return df_normalized
     
-    def silhouette_result(self, metrics_score:list, filename='silouette_result'):
+    def silhouette_result(self, metrics_score:list, max_clusters,filename='silouette_result'):
         plt.figure(figsize=(25, 8))
         sns.set_style("darkgrid")
         plt.title(f'Silhouette score for different number of clusters', fontsize=14, fontweight='bold')
@@ -129,11 +129,23 @@ class Clustering():
         plt.ylabel('Silhouette', fontsize=14, fontweight='bold')
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
-        plt.plot(list(range(2, self.max_clusters + 1)), metrics_score, marker='o')
+        plt.plot(list(range(2, max_clusters + 1)), metrics_score, marker='o')
         plt.savefig(f'{self.out_path}/{filename}.png')
         plt.close()
 
-    def plot_silhouettes_and_objects(self, labels, predict, filename='silhouette_objects'):
+    def kmeans_distortion(self, kmeans_distortions, max_clusters, filename='distortion'):
+        plt.figure(figsize=(25, 8))
+        sns.set_style("darkgrid")
+        plt.title('Distortion values for different number of clusters (for Kmeans)', fontsize=14, fontweight='bold')
+        plt.xlabel('Clusters', fontsize=14, fontweight='bold')
+        plt.ylabel('SSE',fontsize=14, fontweight='bold')
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.plot(list(range(2, max_clusters + 1)), kmeans_distortions, marker='o')
+        plt.savefig(f'{self.out_path}/{filename}.png')
+        plt.close()
+
+    def plot_silhouettes_and_objects(self, labels, predict, clusters, filename='silhouette_objects'):
         plt.figure(figsize=(25, 10))
         
         ## Subplot 1: Tamaño de clústeres
@@ -185,21 +197,20 @@ class Clustering():
         data['PCA2'] = X_pca[:, 1]
 
         plt.subplot(1, 3, 3)
-        sns.scatterplot(x=data['PCA1'], y=data['PCA2'], hue=data['Cluster'], palette='bright', s=60)
+        sns.scatterplot(x=data['PCA1'], y=data['PCA2'], hue=data['Cluster'], palette=sns.color_palette("hls", clusters), s=60)
         plt.title("Clusters in PCA space", fontsize=14, fontweight='bold')
         plt.xlabel("PCA1", fontsize=14, fontweight='bold')
         plt.ylabel("PCA2", fontsize=14, fontweight='bold')
         plt.legend(title='Cluster')
-        plt.savefig(filename)
 
         ## Guardar
         plt.tight_layout()
         plt.savefig(f'{self.out_path}/{filename}.png')
         plt.close()
 
-clust = Clustering(max_clusters=40,
-                   metric='euclidean',
+clust = Clustering(metric='manhattan',
+                   clustering_alg='kmeans',
                    data_path='src/results_objectives.csv',
                    out_path='src/tests/out/clustering')
 
-clust.cluster()
+clust.cluster_test(max_clusters=10)
