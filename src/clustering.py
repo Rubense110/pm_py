@@ -20,10 +20,11 @@ class Clustering():
         self.data_path = data_path
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
         data_filename = data_path.split('_')[-1].replace('csv', '')
-        self.out_path = f"{out_path}/{self.local_time}-{data_filename}"
+        self.out_path = f"{out_path}/{self.local_time}-{data_filename}-{clustering_alg}"
         self.data_df = self.normalize_data(pd.read_csv(data_path))
         self.metric = metric
         self.clustering_alg =clustering_alg
+        self.linkage = 'ward'
     
         os.makedirs(self.out_path, exist_ok=True)
 
@@ -31,7 +32,7 @@ class Clustering():
         n_clusters = self.optimal_cluster_size
 
         if self.clustering_alg == 'aglomerative':
-                model = AgglomerativeClustering(linkage='single', 
+                model = AgglomerativeClustering(linkage=self.linkage, 
                                                 metric=self.metric, 
                                                 n_clusters = n_clusters)
                 predict = model.fit_predict(self.data_df)
@@ -72,7 +73,7 @@ class Clustering():
         for n_clusters in range(2, max_clusters+1):
 
             if self.clustering_alg == 'aglomerative':
-                model = AgglomerativeClustering(linkage='single', 
+                model = AgglomerativeClustering(linkage=self.linkage, 
                                                 metric=self.metric, 
                                                 n_clusters = n_clusters)
                 predict = model.fit_predict(self.data_df)
@@ -154,7 +155,7 @@ class Clustering():
         sns.set_style("darkgrid")
         cluster_group = labels.groupby('Labels').size()
 
-        plt.title('Cluster Sizes for Different Models', fontsize=14, fontweight='bold')
+        plt.title('Cluster Sizes ', fontsize=14, fontweight='bold')
         sns.barplot(x=cluster_group.values, y=list(map(str, cluster_group.index)))
         plt.xlabel('Cluster', fontsize=14, fontweight='bold')
         plt.ylabel('Number of Objects', fontsize=14, fontweight='bold')
@@ -216,9 +217,9 @@ if __name__ == "__main__":
     open = 'src/results_objectives_open.csv'
     incidents = 'src/results_objectives_incidents.csv'
 
-    clust = Clustering(metric='manhattan',
-                    clustering_alg='kmeans',
-                    data_path=incidents,
+    clust = Clustering(metric='euclidean',
+                    clustering_alg='aglomerative',
+                    data_path=financial,
                     out_path='src/tests/out/clustering')
 
     clust.cluster_test(max_clusters=10)
