@@ -1,4 +1,6 @@
 from scipy.spatial.distance import pdist, squareform
+from scipy.optimize import linear_sum_assignment
+from sklearn.metrics import confusion_matrix
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import directed_hausdorff
@@ -19,12 +21,14 @@ class Clustering():
     def __init__(self, metric, clustering_alg, data_path, out_path):
         self.data_path = data_path
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
-        data_filename = data_path.split('_')[-1].replace('csv', '')
+        data_filename = data_path.split('_')[-1].replace('.csv', '')
         self.out_path = f"{out_path}/{self.local_time}-{data_filename}-{clustering_alg}"
         self.data_df = self.normalize_data(pd.read_csv(data_path))
         self.metric = metric
         self.clustering_alg =clustering_alg
-        self.linkage = 'ward'
+
+        ## single, ward, average, complete
+        self.linkage = 'single'
     
         os.makedirs(self.out_path, exist_ok=True)
 
@@ -210,16 +214,171 @@ class Clustering():
         plt.savefig(f'{self.out_path}/{filename}.png')
         plt.close()
 
+
+class HittingSearchClustering(Clustering):
+
+    def hitting_search(self, max_clusters):
+        methods = {
+            'kmeans': None,
+            'aglomerative_single': 'single',
+            'aglomerative_ward': 'ward',
+            'aglomerative_average': 'average',
+            'aglomerative_complete': 'complete'
+        }
+
+        results = {}
+        
+        # Iterar por cada algoritmo y realizar el clustering
+        for method, linkage in methods.items():
+            print(f"\n### Running clustering with method: {method} ###\n")
+            self.clustering_alg = 'kmeans' if method == 'kmeans' else 'aglomerative'
+            self.linkage = linkage
+            
+            # Calcular número de clústeres óptimo y realizar clustering
+            self.cluster_test(max_clusters)
+            n_clusters = self.optimal_cluster_size
+
+            if self.clustering_alg == 'kmeans':
+                model = KMeans(n_clusters=n_clusters, 
+                               init="k-means++", 
+                               n_init=10,
+                               max_iter=280, 
+                               random_state=42)
+            else:
+                model = AgglomerativeClustering(linkage=self.linkage, 
+                                                metric=self.metric, 
+                                                n_clusters=n_clusters)
+                
+            predict = model.fit_predict(self.data_df)
+            
+            # Guardar resultados
+            results[method] = {
+                'clusters': n_clusters,
+                'labels': predict,
+                'silhouette': silhouette_score(self.data_df, predict),
+            }
+            print(f"Optimal clusters for {method}: {n_clusters}")
+            print(f"Silhouette score: {results[method]['silhouette']:.3f}\n")
+
+        # Comparar resultados
+        self.compare_results(results)
+    
+    def compare_results(self, results):
+        print("\n### Comparing Results ###\n")
+
+        all_methods = list(results.keys())
+        comparisons = []
+
+        for i in range(len(all_methods)):
+            for j in range(i + 1, len(all_methods)):
+                method1, method2 = all_methods[i], all_methods[j]
+                labels1, labels2 = results[method1]['labels'], results[method2]['labels']
+                
+                # Alinear etiquetas de clústeres
+                aligned_labels2 = self.align_labels(labels1, labels2)
+                
+                # Comparar etiquetas alineadas
+                matches = np.sum(labels1 == aligned_labels2) / len(labels1)
+                comparisons.append((method1, method2, matches))
+                print(f"Comparison {method1} vs {method2}: {matches * 100:.2f}% of points match.")
+        
+        # Visualizar diferencias en PCA
+        self.visualize_comparisons(results)
+    
+    def align_labels(self, labels1, labels2):
+        """
+        Alinear etiquetas de clústeres entre dos conjuntos de etiquetas para maximizar coincidencias.
+        """
+        # Crear matriz de contingencia
+        contingency_matrix = confusion_matrix(labels1, labels2)
+        
+        # Resolver asignación óptima usando el algoritmo húngaro
+        row_ind, col_ind = linear_sum_assignment(-contingency_matrix)
+        
+        # Crear un mapa de etiquetas alineadas
+        label_mapping = {old: new for old, new in zip(col_ind, row_ind)}
+        
+        # Asignar las etiquetas alineadas
+        aligned_labels2 = np.array([label_mapping[label] for label in labels2])
+        return aligned_labels2
+    
+    def visualize_comparisons(self, results):
+        """
+        Generar visualizaciones de comparación entre diferentes algoritmos.
+        Incluye los gráficos de clusters en PCA para cada algoritmo y un gráfico de barras con comparaciones.
+        """
+        all_methods = list(results.keys())
+        comparisons = []
+
+        # Configurar el gráfico con subplots
+        fig, axs = plt.subplots(2, 3, figsize=(24, 16))  # 2 filas x 3 columnas
+        fig.suptitle("Comparison of Clustering Methods", fontsize=18, fontweight="bold")
+
+        # Subplots 1-5: PCA de cada algoritmo
+        for idx, method in enumerate(all_methods):
+            data = self.data_df.copy()
+            data['Cluster'] = results[method]['labels']
+
+            # Reducir a 2 dimensiones con PCA
+            pca = PCA(n_components=2)
+            pca_result = pca.fit_transform(data.drop(columns=['Cluster']))
+            data['PCA1'], data['PCA2'] = pca_result[:, 0], pca_result[:, 1]
+
+            # Graficar
+            sns.scatterplot(ax=axs[idx // 3, idx % 3],
+                            x=data['PCA1'], y=data['PCA2'],
+                            hue=data['Cluster'], palette="hsv", s=60)
+            axs[idx // 3, idx % 3].set_title(f"Clusters with PCA: {method}")
+            axs[idx // 3, idx % 3].set_xlabel("PCA1")
+            axs[idx // 3, idx % 3].set_ylabel("PCA2")
+            axs[idx // 3, idx % 3].legend(title='Cluster', loc='best')
+
+        # Comparar pares de algoritmos
+        for i in range(len(all_methods)):
+            for j in range(i + 1, len(all_methods)):
+                method1, method2 = all_methods[i], all_methods[j]
+                labels1, labels2 = results[method1]['labels'], results[method2]['labels']
+                
+                # Alinear etiquetas
+                aligned_labels2 = self.align_labels(labels1, labels2)
+                
+                # Calcular porcentaje de coincidencia
+                matches = np.sum(labels1 == aligned_labels2) / len(labels1)
+                comparisons.append((f"{method1} vs {method2}", matches))
+
+        # Subplot 6: Comparaciones ordenadas
+        comparisons.sort(key=lambda x: x[1], reverse=True)
+        labels, scores = zip(*comparisons)
+
+        axs[1, 2].barh(labels, scores, color='skyblue')
+        axs[1, 2].set_title("Pairwise Cluster Comparison")
+        axs[1, 2].set_xlabel("Match Percentage")
+        axs[1, 2].invert_yaxis()  # Para mostrar el más alto primero
+
+        # Ajustar diseño
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Deja espacio para el título principal
+        plt.savefig(f"{self.out_path}/comparisons_full.png")
+        plt.close()
+
 if __name__ == "__main__":
 
-    closed = 'src/results_objectives_closed.csv'
+    closed =    'src/results_objectives_closed.csv'
     financial = 'src/results_objectives_financial.csv'
-    open = 'src/results_objectives_open.csv'
+    open =      'src/results_objectives_open.csv'
     incidents = 'src/results_objectives_incidents.csv'
 
+    clust = HittingSearchClustering(metric='euclidean',
+                                    clustering_alg='aglomerative',
+                                    data_path=financial,
+                                    out_path='src/tests/out/hitting_search')
+
+    clust.hitting_search(max_clusters=10)
+
+    '''
     clust = Clustering(metric='euclidean',
-                    clustering_alg='aglomerative',
-                    data_path=financial,
-                    out_path='src/tests/out/clustering')
+                       clustering_alg='aglomerative',
+                       data_path=financial,
+                       out_path='src/tests/out/clustering')
 
     clust.cluster_test(max_clusters=10)
+    '''

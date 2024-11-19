@@ -79,7 +79,7 @@ class Basic_Metrics(Metrics):
 
     def get_metrics_array(self, petri: PetriNet, im, fm, log):
 
-                # basic metrics
+        # basic metrics
         n_places = len(petri.places)
         n_transitions = len(petri.transitions)
         n_arcs = len(petri.arcs)
