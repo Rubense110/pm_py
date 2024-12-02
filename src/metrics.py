@@ -133,6 +133,127 @@ class Basic_Conformance(Basic_Metrics):
         self.metrics_array = basic_metrics
         return self.metrics_array
 
+class Quality_Metrics(Metrics):
+
+    def __init__(self):
+        super().__init__()
+
+        fitness = 0
+        precision = 0
+        simplicity = 0
+        generalization = 0
+
+        self.metrics_array = np.array([fitness, precision, simplicity, generalization])
+        self.n_of_metrics = len(self.metrics_array)
+        self.labels = ['fitness', 'precision', 'simplicity', 'generalization']
+
+    def get_metrics_array(self, petri: PetriNet, im, fm, events_log):
+        
+        fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        fitness = fitness_token_dict['average_trace_fitness']
+        precision = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        simplicity = self.__calculate_simplicity(petri)
+        generalization = self.__calculate_generalization(petri, events_log)
+
+        self.metrics_array = np.array([fitness, precision, simplicity, generalization])
+        return self.metrics_array
+
+    def get_n_of_metrics(self):
+        return self.n_of_metrics
+
+    def get_labels(self):
+        return self.labels
+    
+    def __calculate_simplicity(self, petri: PetriNet):
+        """
+        Calculate the simplicity metric as per the given formula.
+        ∂s = (|T| − |TDT| + |TIT|) / |T|
+
+        T: Total transitions
+        TDT: Alternative duplicate tasks
+        TIT: Redundant invisible tasks
+        """
+
+        transitions = petri.transitions
+        T = len(transitions)
+        TDT = self.__count_alternative_duplicate_tasks(transitions)
+        TIT = self.__count_redundant_invisible_tasks(transitions)
+
+        if T == 0:  
+            return 0
+        return (T - TDT + TIT) / T
+    
+    def __count_alternative_duplicate_tasks(self, transitions):
+        """
+        Count the number of alternative duplicate tasks (TDT).
+        These are tasks that are never repeated simultaneously within a single sequence.
+        """
+        task_names = {}
+        TDT = 0
+
+        for transition in transitions:
+            if not transition.label:  # Skip invisible transitions
+                continue
+            if transition.label not in task_names:
+                task_names[transition.label] = 1
+            else:
+                task_names[transition.label] += 1
+
+        # Count tasks that appear more than once
+        for count in task_names.values():
+            if count > 1:
+                TDT += 1
+        return TDT
+    
+    def __count_redundant_invisible_tasks(self, transitions):
+        """
+        Count the number of redundant invisible tasks (TIT).
+        These are invisible tasks that can be safely eliminated from the model without altering its behavior.
+        """
+        TIT = 0
+
+        for transition in transitions:
+            if transition.label is None or transition.label == "":
+                # Check if the invisible task is redundant (no arcs or same input/output places)
+                if transition.in_arcs == transition.out_arcs:
+                    TIT += 1
+
+        return TIT
+    
+    def __calculate_generalization(self, petri: PetriNet, events_log):
+        """
+        Calculate the generalization metric as per the given formula:
+        Qg = 1 − (Σnodes(√#execution)−1) / 'nodes_in_model'
+        """
+        # Create a mapping of transitions and their execution counts from the event log
+        execution_counts = self.__get_transition_execution_counts(events_log, petri.transitions)
+
+        total_nodes = len(petri.transitions)
+        if total_nodes == 0:  # Avoid division by zero
+            return 0
+
+        generalization_sum = 0
+        for transition in petri.transitions:
+            # Execution count for the transition
+            execution_count = execution_counts.get(transition.label, 0)
+            generalization_sum += (1 / (1 + np.sqrt(execution_count)))
+
+        # Generalization score
+        return 1 - (generalization_sum / total_nodes)
+
+    def __get_transition_execution_counts(self, events_log, transitions):
+        """
+        Create a mapping of transition labels to their execution counts from the event log.
+        """
+        execution_counts = {t.label: 0 for t in transitions if t.label}
+
+        for trace in events_log:
+            for event in trace:
+                if event["concept:name"] in execution_counts:
+                    execution_counts[event["concept:name"]] += 1
+
+        return execution_counts
+    
 class Basic_Metrics_Usefull_Simple(Basic_Metrics):
 
     ## RULES

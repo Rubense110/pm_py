@@ -90,7 +90,8 @@ miner_mapping = {
 metrics_mapping = {
     'basic': metrics.Basic_Metrics(),
     'basic_useful_simple': metrics.Basic_Metrics_Usefull_Simple(),
-    'basic_conformance': metrics.Basic_Conformance()
+    'basic_conformance': metrics.Basic_Conformance(),
+    'quality' : metrics.Quality_Metrics()
 }
 
 parameter_mapping = {

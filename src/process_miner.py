@@ -214,7 +214,7 @@ if __name__ == "__main__":
     log = 'event_logs/Open/BPI_Challenge_2013_open_problems.xes'
 
     p_miner = ProcessMiner(miner_type='heuristic',
-                            metrics='basic',
+                            metrics='quality',
                             log = log,)
     
     nsgaii_params = {'population_size': 100,
