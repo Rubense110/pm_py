@@ -123,6 +123,8 @@ class Clustering():
         Elbow_M.show(f'{self.out_path}/{filename}.png')
         
     def normalize_data(self, df: pd.DataFrame):
+        if 'log_name' in df.columns:
+            df.drop('log_name', inplace=True, axis=1)
         scaler = StandardScaler()
         df_normalized = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
         return df_normalized
@@ -367,18 +369,22 @@ if __name__ == "__main__":
     open =      'src/results_objectives_open.csv'
     incidents = 'src/results_objectives_incidents.csv'
 
+    completo = 'src/csv_completo.csv'
+    closed_data = 'data-closed.csv'
+    open_data = 'data-open.csv'
+
     clust = HittingSearchClustering(metric='euclidean',
                                     clustering_alg='aglomerative',
-                                    data_path=financial,
+                                    data_path=open_data ,
                                     out_path='src/tests/out/hitting_search')
 
     clust.hitting_search(max_clusters=10)
 
-    '''
-    clust = Clustering(metric='euclidean',
-                       clustering_alg='aglomerative',
-                       data_path=financial,
-                       out_path='src/tests/out/clustering')
+    
+"""
+clust = Clustering(metric='euclidean',
+                    clustering_alg='kmeans',
+                    data_path=completo,
+                    out_path='src/tests/out/clustering')
 
-    clust.cluster_test(max_clusters=10)
-    '''
+clust.cluster_test(max_clusters=10)"""

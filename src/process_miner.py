@@ -10,6 +10,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 import time
 import os
+import pandas as pd
 
 class ProcessMiner:
     '''
@@ -41,7 +42,7 @@ class ProcessMiner:
                       'SPEA2': SPEA2}
 
 
-    def __init__(self, miner_type, metrics,  log):
+    def __init__(self, miner_type, metrics,  log, outpath=None):
 
         self.miner_type = miner_type
         self.metrics_type = metrics
@@ -52,9 +53,13 @@ class ProcessMiner:
         self.metrics_obj = self.__get_metrics_type(metrics)
         
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
-        self.outpath = f'{self.out_folder}/{self.local_time}-{self.log_name}'
-        self.opt = optimize.Optimizer(self.miner, self.log, self.metrics_obj, self.outpath)
 
+        if outpath == None:
+            self.outpath = f'{self.out_folder}/{self.local_time}-{self.log_name}'
+        else:
+            self.outpath = f'{self.out_folder}/{outpath}'
+
+        self.opt = optimize.Optimizer(self.miner, self.log, self.metrics_obj, self.outpath)
         self.star_time = time.time()
         
     def __get_miner_alg(self, miner):
@@ -113,34 +118,43 @@ class ProcessMiner:
                 dicc[attr_name] = attr_value
         return dicc
     
-    def __save(self):
-        '''
-        Saves into the outpath relevant information about the execution:
-
-        Petri nets   : For each pareto optimal solution its petri net is generated and saved
-        Pareto front : An image graph of the pareto front
-        result_variables.csv : The variables of each pareto optimal solution (miner params)
-        result_objectives.csv : The objectives of each pareto optimal solution (fitness array)
-        '''
+    def save_petri_nets(self):
+        """
+        Saves Petri nets for each Pareto optimal solution.
+        """
         os.makedirs(self.outpath, exist_ok=True)
 
-        for index,petri in enumerate(self.opt.get_pareto_front_petri_nets()):
+        for index, petri in enumerate(self.opt.get_pareto_front_petri_nets()):
             gviz = pn_visualizer.apply(petri[0], petri[1], petri[2])
             pn_visualizer.save(gviz, f'{self.outpath}/petri_pareto_{index}.png')
 
+    def save_pareto_front(self):
+        """
+        Saves the Pareto front graph as an image.
+        """
+        os.makedirs(self.outpath, exist_ok=True)
         self.opt.plot_pareto_front(title='Pareto front approximation', filename=f'{self.outpath}/Pareto Front')
 
+    def save_csvs(self):
+        """
+        Saves CSV files for variables and objectives of each Pareto optimal solution.
+        """
+        os.makedirs(self.outpath, exist_ok=True)
+
+        # Save result variables to CSV
         with open(f"{self.outpath}/results_variables.csv", 'w') as log:
             parameter_names = ",".join(self.opt.parameters_info.base_params.keys())
-            log.write(parameter_names+"\n")
+            log.write(parameter_names + "\n")
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.variables))}\n')
 
+        # Save result objectives to CSV
         with open(f"{self.outpath}/results_objectives.csv", 'w') as log:
             metrics_labels = ",".join(self.metrics_obj.get_labels())
-            log.write(metrics_labels+"\n")
+            log.write(metrics_labels + "\n")
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
+
 
     def discover(self, algorithm_name, store=True, **params):
         '''
@@ -168,9 +182,11 @@ class ProcessMiner:
         self.opt.discover(algorithm_class=algorithm_class, **params)
         self.opt_type = algorithm_class.__name__
         self.end_time = time.time()
+        self.__log()
         if store:
-            self.__log()
-            self.__save()
+            self.save_petri_nets()
+            self.save_pareto_front()
+            self.save_csvs()
 
     
     def set_log_file(self, logpath):
@@ -197,31 +213,86 @@ class ProcessMiner:
                 unique_lines = sorted(set(map(str.strip, lines)))
                 unique_count = len(unique_lines)
                 print(f"{file}: {unique_count}")
+
+def generate_dataset(miner_type:str, metrics:str, logs:list[tuple[str,str]], outpath:str, iters:int, optim_params=parameters.nsgaii_params, optim_name='NSGAII'):
+
+    for i in range(iters):
+        print(f"Iteración {i+1} de {iters}")
+        for log_name, log in logs:
+
+            path = f'{outpath}/it_{i+1}_{log_name}'
+            p_miner = ProcessMiner(miner_type=miner_type,
+                                   metrics=metrics,
+                                   log = log,
+                                   outpath=path)
+            
+            p_miner.discover(algorithm_name=optim_name, **optim_params, store=False)
+            p_miner.save_csvs()
+    collect_and_concatenate_csvs(base_path=outpath, output_csv='csv_completo.csv')
+
+def collect_and_concatenate_csvs(base_path: str, output_csv: str):
+    """
+    Recorre todas las subcarpetas dentro de `base_path`, busca archivos `results_variables.csv`,
+    los concatena y guarda el resultado en un archivo CSV único.
+
+    Args:
+        base_path (str): Ruta base donde están las carpetas generadas.
+        output_csv (str): Ruta del archivo CSV de salida.
+    """
+    all_data = []  
+    base_path = os.path.join(os.path.abspath('.'), 'out' , base_path)
+    output_csv = os.path.join(base_path, output_csv)
+
+    for root, dirs, files in os.walk(base_path):
+        for file in files:
+            if file == 'results_variables.csv':  
+                file_path = os.path.join(root, file)
+                try:
+                    log_name = os.path.basename(os.path.dirname(file_path)).split('_')[-1]
+                    df = pd.read_csv(file_path)
+
+                    ## log del que provienen
+                    df['log_name'] = log_name
+                    
+                    ## redondeo a 2 decimales
+                    numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
+                    df[numeric_columns] = df[numeric_columns].round(5)
+                    
+                    all_data.append(df)
+                except Exception as e:
+                    print(f"Error al leer el archivo {file_path}: {e}")
+    if all_data:
+        concatenated_df = pd.concat(all_data, ignore_index=True)
+        concatenated_df = concatenated_df.drop_duplicates()
+        concatenated_df.to_csv(output_csv, index=False)
+        print(f"Archivo concatenado guardado en {output_csv}")
+    else:
+        print("No se encontraron archivos `results_variables.csv` para concatenar.")
+
+        
 ## TESTING
 if __name__ == "__main__":
-        
-    from jmetal.operator.crossover import *
-    from jmetal.operator.mutation import PolynomialMutation
-    from jmetal.util.termination_criterion import StoppingByEvaluations
 
+    """log_closed = ('closed', 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes')
+    log_open = ('open', 'event_logs/Open/BPI_Challenge_2013_open_problems.xes')
+    log_financial = ('financial', 'event_logs/Financial/BPI_Challenge_2012.xes')
 
+    log_list = [log_closed, log_open]
 
-    max_evaluations = 1000
+    generate_dataset(miner_type='heuristic',
+                     metrics='basic',
+                     logs = log_list,
+                     outpath='prueba_dataset_100iters',
+                     iters=100)"""
+    
+    log_financial = 'event_logs/Financial/BPI_Challenge_2012.xes'
 
-
-    #log = 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes'
-    #log = 'event_logs/Financial/BPI_Challenge_2012.xes'
-    log = 'event_logs/Open/BPI_Challenge_2013_open_problems.xes'
-
+    log = log_financial
+    
     p_miner = ProcessMiner(miner_type='heuristic',
                             metrics='quality',
-                            log = log,)
+                            log = log)
     
-    nsgaii_params = {'population_size': 100,
-                     'offspring_population_size': 100,
-                     'mutation': PolynomialMutation(probability=1.0 / p_miner.opt.number_of_variables, distribution_index=20),
-                     'crossover': SBXCrossover(probability=1.0, distribution_index=20),
-                     'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
-    
-    p_miner.discover(algorithm_name='NSGAII', **nsgaii_params)
+    p_miner.discover(algorithm_name='NSGAII', **parameters.nsgaii_params)
     p_miner.show_pareto_iterations()
+    

@@ -5,6 +5,9 @@ from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 import pm4py
 from abc import abstractmethod
+from jmetal.operator.crossover import *
+from jmetal.operator.mutation import PolynomialMutation
+from jmetal.util.termination_criterion import StoppingByEvaluations
 
 
 class BaseParametersConfig():
@@ -98,3 +101,10 @@ parameter_mapping = {
     'inductive': InductiveParametersConfig(),
     'heuristic': HeuristicParametersConfig()
 }
+
+max_evaluations = 1000
+nsgaii_params = {'population_size': 100,
+                 'offspring_population_size': 100,
+                 'mutation': PolynomialMutation(probability=0.17, distribution_index=20),
+                 'crossover': SBXCrossover(probability=1.0, distribution_index=20),
+                 'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}
