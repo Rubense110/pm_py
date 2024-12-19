@@ -7,7 +7,6 @@ from pm4py.conformance import precision_token_based_replay
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-from utils import silence_stdout
 
 class Metrics():
 
@@ -120,13 +119,12 @@ class Basic_Conformance(Basic_Metrics):
 
         #fitness_alignment_dict = fitness_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
         #fitness_alignment = fitness_alignment_dict['average_trace_fitness']
-        with silence_stdout():
-            fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+
+        fitness_token_dict = fitness_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
         fitness_token = fitness_token_dict['average_trace_fitness']
 
         #precission_alignment = precision_alignments(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
-        with silence_stdout():
-            precission_token = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
+        precission_token = precision_token_based_replay(log=events_log, petri_net=petri, initial_marking=im, final_marking=fm)
 
 
         basic_metrics = np.append(basic_metrics, [-fitness_token, -precission_token]) ## estamos minimizando 
@@ -334,6 +332,40 @@ class Basic_Metrics_Usefull_Simple(Basic_Metrics):
         nx.draw(graph, pos, with_labels=True, node_size=100, node_color='skyblue', font_size=10, font_weight='bold')
         plt.savefig("petrigraph.png")
 
+class Extended_Quality_Metrics(Quality_Metrics):
+
+    def __init__(self):
+        super().__init__()
+
+        # Adding new metrics for distances
+        fpd = 0  # Fitness-Precision Distance
+        sgd = 0  # Simplicity-Generalization Distance
+
+        self.metrics_array = np.append(self.metrics_array, [fpd, sgd])
+        self.n_of_metrics = len(self.metrics_array)
+        self.labels.extend(['fp_distance', 'sg_distance'])
+
+    def get_metrics_array(self, petri: PetriNet, im, fm, events_log):
+        # Calculate base quality metrics
+        base_metrics = super().get_metrics_array(petri, im, fm, events_log)
+
+        # Calculate distances
+        fitness = base_metrics[0]  # Fitness
+        precision = base_metrics[1]  # Precision
+        simplicity = base_metrics[2]  # Simplicity
+        generalization = base_metrics[3]  # Generalization
+
+        fpd = abs(fitness - precision)
+        sgd = abs(simplicity - generalization)
+
+        # Add new metrics to array
+        extended_metrics = np.append(base_metrics, [fpd, sgd])
+        self.metrics_array = extended_metrics
+        return self.metrics_array
+
+    def get_labels(self):
+        return self.labels
+
 ## TESTING
 if __name__ == "__main__":
 
@@ -350,7 +382,7 @@ if __name__ == "__main__":
     gviz = pn_visualizer.apply(net, initial_marking, final_marking)
     pn_visualizer.view(gviz)
 
-    metrics_obj =  Basic_Metrics_Usefull_simple()
+    metrics_obj =  Basic_Metrics_Usefull_Simple()
     metrics_labels = metrics_obj.get_labels()
     #metrics = 
     print(metrics_obj.get_metrics_array(net))

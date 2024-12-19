@@ -1,16 +1,22 @@
-# activate venv -> .\.venv\Scripts\activate --- source .venv/bin/activate
-# PATH -> export PYTHONPATH="${PYTHONPATH}:/home/ruben/Documents/TFG/" ## echo $PYTHONPATH para verlo
 import optimize
 import parameters
+import config
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal_fixed import NSGAIII
 from jmetal.algorithm.multiobjective.spea2 import SPEA2
+from jmetal.algorithm.multiobjective.nsgaii import DistributedNSGAII
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 import time
 import os
 import pandas as pd
+import importlib.util
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import common
+
 
 class ProcessMiner:
     '''
@@ -27,9 +33,9 @@ class ProcessMiner:
         The path to the log file where results will be recorded.
     out_folder : str
         The output folder path where results and visualizations will be saved.
-    miner_type : str
+    miner_name : str
         The type of mining algorithm to be used (e.g., "Heuristic").
-    metrics_type : str
+    metrics_name : str
         The string defining the type of metrics used for evaluation. Must be one of te implementations from the 'metrics' module.
     log_name : str
         The desired path to the log file, the file will be created if does not exist
@@ -39,19 +45,16 @@ class ProcessMiner:
     out_folder = 'out/'
     available_opts = {'NSGAII' : NSGAII,
                       'NSGAIII' : NSGAIII,
-                      'SPEA2': SPEA2}
+                      'SPEA2': SPEA2,
+                      'NSGAII-D': DistributedNSGAII}
 
 
-    def __init__(self, miner_type, metrics,  log, outpath=None):
+    def __init__(self, miner_name, metrics,  log:tuple[str, str], outpath=None):
 
-        self.miner_type = miner_type
-        self.metrics_type = metrics
-        self.log_name = os.path.basename(log)
-
-        self.miner = self.__get_miner_alg(miner_type)
-        self.log = xes_importer.apply(log)
-        self.metrics_obj = self.__get_metrics_type(metrics)
-        
+        self.miner_name = miner_name
+        self.metrics_name = metrics
+        self.log_name = log[0]
+        self.log_path = log[1]
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
 
         if outpath == None:
@@ -59,32 +62,8 @@ class ProcessMiner:
         else:
             self.outpath = f'{self.out_folder}/{outpath}'
 
-        self.opt = optimize.Optimizer(self.miner, self.log, self.metrics_obj, self.outpath)
+        self.opt = optimize.Optimizer(self.miner_name, self.log_path, self.metrics_name, self.outpath)
         self.star_time = time.time()
-        
-    def __get_miner_alg(self, miner):
-        '''
-        Retrieves the mining algorithm class based on the specified miner name.
-
-        Returns
-        -------
-        class : The mining algorithm class corresponding to the specified miner name.
-        '''
-        if miner not in parameters.miner_mapping:
-            raise ValueError(f"Minero '{miner}' no está soportado. Los mineros disponibles son: {list(parameters.miner_mapping.keys())}")
-        return parameters.miner_mapping[miner]
-
-    def __get_metrics_type(self, metrics):
-        '''
-        Retrieves the metrics class based on the specified name.
-        
-        Returns
-        -------
-        class : The metrics class corresponding to the specified metrics name.
-        '''
-        if metrics not in parameters.metrics_mapping:
-            raise ValueError(f"Las métricas '{metrics}' no están soportadas. Las métricas disponibles son: {list(parameters.metrics_mapping.keys())}")
-        return parameters.metrics_mapping[metrics]
     
     def __log(self):
         '''
@@ -93,10 +72,10 @@ class ProcessMiner:
         if os.path.isfile(self.log_file):
             with open(self.log_file, 'a') as log:
                 runtime = str(self.end_time - self.star_time)
-                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_type};{self.opt_type};{self.extract_params()};{self.metrics_type};{self.opt.get_best_solution().variables}')
+                log.write(f'\n{self.local_time};{runtime};{self.log_name};{self.miner_name};{self.opt_type};{self.extract_params()};{self.metrics_name};{self.opt.get_best_solution().variables}')
         else:
             with open(self.log_file, 'w') as log:
-                log.write('Timestamp,Runtime, Log Name, Miner Type, Opt type, Opt Parameters, Metrics type, Optimal solution')
+                log.write('Timestamp,Runtime, Log Name, Miner Type, Opt type, Opt config, Metrics type, Optimal solution')
             self.__log()
 
     def extract_params(self):
@@ -150,13 +129,13 @@ class ProcessMiner:
 
         # Save result objectives to CSV
         with open(f"{self.outpath}/results_objectives.csv", 'w') as log:
-            metrics_labels = ",".join(self.metrics_obj.get_labels())
+            metrics_labels = ",".join(config.metrics_mapping[self.metrics_name].get_labels())
             log.write(metrics_labels + "\n")
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
 
 
-    def discover(self, algorithm_name, store=True, **params):
+    def discover(self, algorithm_name, store=True, parallel =False, **params):
         '''
         Performs the hiperparameter optimization of the miner specified when instanciating
         the class using the algorithm class and its hiperparameters entered as attributes.
@@ -179,7 +158,12 @@ class ProcessMiner:
             algorithm_class = self.available_opts[algorithm_name]
 
         self.params = params
-        self.opt.discover(algorithm_class=algorithm_class, **params)
+
+        if parallel:
+            self.opt.discover_parallel()
+        else:
+            self.opt.discover(algorithm_class=algorithm_class, **params)
+
         self.opt_type = algorithm_class.__name__
         self.end_time = time.time()
         self.__log()
@@ -214,85 +198,20 @@ class ProcessMiner:
                 unique_count = len(unique_lines)
                 print(f"{file}: {unique_count}")
 
-def generate_dataset(miner_type:str, metrics:str, logs:list[tuple[str,str]], outpath:str, iters:int, optim_params=parameters.nsgaii_params, optim_name='NSGAII'):
 
-    for i in range(iters):
-        print(f"Iteración {i+1} de {iters}")
-        for log_name, log in logs:
-
-            path = f'{outpath}/it_{i+1}_{log_name}'
-            p_miner = ProcessMiner(miner_type=miner_type,
-                                   metrics=metrics,
-                                   log = log,
-                                   outpath=path)
-            
-            p_miner.discover(algorithm_name=optim_name, **optim_params, store=False)
-            p_miner.save_csvs()
-    collect_and_concatenate_csvs(base_path=outpath, output_csv='csv_completo.csv')
-
-def collect_and_concatenate_csvs(base_path: str, output_csv: str):
-    """
-    Recorre todas las subcarpetas dentro de `base_path`, busca archivos `results_variables.csv`,
-    los concatena y guarda el resultado en un archivo CSV único.
-
-    Args:
-        base_path (str): Ruta base donde están las carpetas generadas.
-        output_csv (str): Ruta del archivo CSV de salida.
-    """
-    all_data = []  
-    base_path = os.path.join(os.path.abspath('.'), 'out' , base_path)
-    output_csv = os.path.join(base_path, output_csv)
-
-    for root, dirs, files in os.walk(base_path):
-        for file in files:
-            if file == 'results_variables.csv':  
-                file_path = os.path.join(root, file)
-                try:
-                    log_name = os.path.basename(os.path.dirname(file_path)).split('_')[-1]
-                    df = pd.read_csv(file_path)
-
-                    ## log del que provienen
-                    df['log_name'] = log_name
-                    
-                    ## redondeo a 2 decimales
-                    numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
-                    df[numeric_columns] = df[numeric_columns].round(5)
-                    
-                    all_data.append(df)
-                except Exception as e:
-                    print(f"Error al leer el archivo {file_path}: {e}")
-    if all_data:
-        concatenated_df = pd.concat(all_data, ignore_index=True)
-        concatenated_df = concatenated_df.drop_duplicates()
-        concatenated_df.to_csv(output_csv, index=False)
-        print(f"Archivo concatenado guardado en {output_csv}")
-    else:
-        print("No se encontraron archivos `results_variables.csv` para concatenar.")
 
         
 ## TESTING
 if __name__ == "__main__":
 
-    """log_closed = ('closed', 'event_logs/Closed/BPI_Challenge_2013_closed_problems.xes')
-    log_open = ('open', 'event_logs/Open/BPI_Challenge_2013_open_problems.xes')
-    log_financial = ('financial', 'event_logs/Financial/BPI_Challenge_2012.xes')
-
-    log_list = [log_closed, log_open]
-
-    generate_dataset(miner_type='heuristic',
-                     metrics='basic',
-                     logs = log_list,
-                     outpath='prueba_dataset_100iters',
-                     iters=100)"""
+    logs = common.generate_logs_dict()
+    log_closed = ('Closed', logs['Closed'])
+    log = log_closed
     
-    log_financial = 'event_logs/Financial/BPI_Challenge_2012.xes'
-
-    log = log_financial
-    
-    p_miner = ProcessMiner(miner_type='heuristic',
-                            metrics='quality',
+    p_miner = ProcessMiner(miner_name='heuristic',
+                            metrics='basic',
                             log = log)
     
-    p_miner.discover(algorithm_name='NSGAII', **parameters.nsgaii_params)
+    p_miner.discover(algorithm_name='NSGAII', **config.nsgaii_params)
     p_miner.show_pareto_iterations()
     

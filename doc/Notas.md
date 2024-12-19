@@ -34,3 +34,59 @@
 
     Averaged Hausdorff Distance (AHD) -> cómo de cerca están dos soluciones en funcion de Manhattan.
     Minimum Pairwise Distance (MPD) -> medir la no similaridad entre los modelos devueltos tras el clustering.
+
+--- 
+
+activate venv -> .\.venv\Scripts\activate --- source .venv/bin/activate
+PATH -> export PYTHONPATH="${PYTHONPATH}:/home/ruben/Documents/TFG/" ## echo $PYTHONPATH para verlo
+
+---
+### Imports
+
+`sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))`
+
+- `os.path.dirname(__file__)`: Devuelve la ruta del directorio donde se encuentra process_miner.py.
+- `os.path.join(os.path.dirname(__file__), '..')`: Navega un nivel hacia atrás desde pm/ para acceder a src/.
+- `sys.path.append(...)`: Añade el directorio src/ al sys.path, permitiendo importar módulos que están a ese nivel.
+
+### Parallel
+
+`/.venv/lib/python3.11/site-packages/jmetal/util/evaluator.py` -> tocado.
+
+Para verificar serialización:
+```python
+# Función a alterar.
+    def evaluate(self, solution_list: List[S], problem: Problem) -> List[S]:
+        #mio
+        def debug_serialization(obj, obj_name):
+            """
+            Debugs the serialization of an object and its attributes.
+
+            Parameters:
+            - obj: The object to test for serialization.
+            - obj_name: A name to identify the object in debug messages.
+            """
+            try:
+                pickle.dumps(obj)
+                print(f"'{obj_name}' es serializable.")
+            except Exception as e:
+                print(f"'{obj_name}' NO es serializable: {e}")
+                
+                # Inspect attributes of the object if it is not serializable
+                if hasattr(obj, '__dict__'):
+                    print(f"--- Analizando atributos de '{obj_name}' ---")
+                    for attr_name, attr_value in obj.__dict__.items():
+                        try:
+                            pickle.dumps(attr_value)
+                            print(f"  El atributo '{attr_name}' es serializable.")
+                        except Exception as attr_error:
+                            print(f"  El atributo '{attr_name}' NO es serializable: {attr_error}")
+                else:
+                    print(f"'{obj_name}' no tiene un atributo __dict__ para inspeccionar.")
+
+
+        debug_serialization(problem, "problem")
+        debug_serialization(solution_list, "solution_list")
+        #finmio
+        return self.pool.map(functools.partial(evaluate_solution, problem=problem), solution_list)
+```

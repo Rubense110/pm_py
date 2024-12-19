@@ -55,20 +55,6 @@ def plot_pareto_front(solutions : List[FloatSolution], axis_labels, title, filen
     plt.savefig(filename)
 
 
-@contextmanager
-def silence_stdout():
-    # Guardar el stdout original
-    original_stdout = sys.stdout
-    # Abrir un archivo nulo para redirigir la salida
-    sys.stdout = open(os.devnull, 'w')
-    try:
-        yield
-    finally:
-        # Restaurar el stdout original
-        sys.stdout.close()
-        sys.stdout = original_stdout
-
-
 if __name__ == "__main__":
     ## TESTING
 

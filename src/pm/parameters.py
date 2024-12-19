@@ -1,13 +1,7 @@
-import metrics
-
 from pm4py.algo.discovery.heuristics.variants.classic import Parameters as HeuristicsParameters
-from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
-from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 import pm4py
 from abc import abstractmethod
-from jmetal.operator.crossover import *
-from jmetal.operator.mutation import PolynomialMutation
-from jmetal.util.termination_criterion import StoppingByEvaluations
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
 
 class BaseParametersConfig():
@@ -56,6 +50,7 @@ class HeuristicParametersConfig(BaseParametersConfig):
             self.adjust_heu_params(log)
 
     def adjust_heu_params(self, log):
+        log = xes_importer.apply(log)  
         log = pm4py.convert_to_dataframe(log)
 
         max_activity_count = log['concept:name'].value_counts().max()
@@ -84,27 +79,3 @@ class InductiveParametersConfig(BaseParametersConfig):
     def get_param_names(self):
         param_names = list(self.base_params.keys())
         return param_names
-        
-miner_mapping = {
-    'inductive': inductive_miner, 
-    'heuristic': heuristics_miner,
-}
-
-metrics_mapping = {
-    'basic': metrics.Basic_Metrics(),
-    'basic_useful_simple': metrics.Basic_Metrics_Usefull_Simple(),
-    'basic_conformance': metrics.Basic_Conformance(),
-    'quality' : metrics.Quality_Metrics()
-}
-
-parameter_mapping = {
-    'inductive': InductiveParametersConfig(),
-    'heuristic': HeuristicParametersConfig()
-}
-
-max_evaluations = 1000
-nsgaii_params = {'population_size': 100,
-                 'offspring_population_size': 100,
-                 'mutation': PolynomialMutation(probability=0.17, distribution_index=20),
-                 'crossover': SBXCrossover(probability=1.0, distribution_index=20),
-                 'termination_criterion': StoppingByEvaluations(max_evaluations=max_evaluations)}

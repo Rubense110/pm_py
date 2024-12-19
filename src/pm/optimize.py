@@ -1,15 +1,22 @@
 import metrics 
 import parameters 
-import utils 
-import problem
+import utils
+from problem import PMProblem
+import config
 
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
+from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.convert import convert_to_petri_net
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal.util.observer import PlotFrontToFileObserver, WriteFrontToFileObserver
+from jmetal.util.evaluator import MultiprocessEvaluator
+from jmetal.operator.crossover import SBXCrossover
+from jmetal.operator.mutation import PolynomialMutation
+from jmetal.util.termination_criterion import StoppingByEvaluations
 import os
 
-class Optimizer(problem.PM_miner_problem):
+class Optimizer():
     '''
     This class performs hyperparameter optimization of process mining algorithms using different techniques implemented
     on the Jmetal metaheuristic algorithm optimization framework
@@ -17,7 +24,7 @@ class Optimizer(problem.PM_miner_problem):
     This class manages the main optimization process, storing the results and extracting the pareto front approximation,
     it also provides methods to retrieve solutions, visualize them, and convert them to petri nets.
 
-    The class extends the pm_miner_problem class, wich specifies the optimization problem, including how solutions are created and evaluated.
+    The class extends the PMProblem class, wich specifies the optimization problem, including how solutions are created and evaluated.
 
     Attributes
     ----------
@@ -30,10 +37,22 @@ class Optimizer(problem.PM_miner_problem):
     
     '''
 
-    def __init__(self, miner, log, metrics_obj, out_folder):
-        parameters_info = self.__get_parameters(miner, log)
+    def __init__(self, miner_name, log_path, metrics_name, out_folder):
+        
+        self.miner_name = miner_name
+        self.log_path = log_path
+        self.metrics_name = metrics_name
+        self.parameters_info = self.__get_parameters(miner_name, log_path)
         self.out_folder = out_folder
-        super().__init__(miner, log, metrics_obj, parameters_info)
+        self.metrics_name = metrics_name
+        self.log = xes_importer.apply(log_path)
+
+        self.problem=PMProblem(
+            miner_name= miner_name,
+            log_path=log_path,
+            metrics_name=metrics_name,
+            parameters_info=self.parameters_info,
+        )
     
     def __get_parameters(self, miner, log):
         '''
@@ -51,10 +70,10 @@ class Optimizer(problem.PM_miner_problem):
         parameters.BaseParametersConfig : An instance of the hyperparameters class corresponding to the specified miner.
 
         '''
-        if miner == heuristics_miner:
+        if miner == 'heuristic':
             params = parameters.HeuristicParametersConfig(log)
             return params
-        elif miner == inductive_miner:
+        elif miner == 'inductive':
             params = parameters.InductiveParametersConfig()
             return params
         else:
@@ -72,6 +91,26 @@ class Optimizer(problem.PM_miner_problem):
             print("     objectives:",j.objectives.tolist(),"\n")
         print("##############")
 
+    def discover_parallel(self):
+        '''
+        Executes parallel hyperparameter optimization
+        '''
+
+        self.algorithm = NSGAII(
+            population_evaluator=MultiprocessEvaluator(8),
+            problem=self.problem,
+            population_size=100,
+            offspring_population_size=100,
+            mutation=PolynomialMutation(probability=0.17, distribution_index=20),
+            crossover=SBXCrossover(probability=1.0, distribution_index=20),
+            termination_criterion=StoppingByEvaluations(max_evaluations=1000),
+        )
+            
+        self.algorithm.observable.register(observer=WriteFrontToFileObserver(os.path.join(self.out_folder, "FRONTS")))
+        self.algorithm.run()
+        self.result = self.algorithm.result()
+        self.non_dom_sols = utils.calculate_pareto_front(self.result)
+
     def discover(self,algorithm_class, **params):
         '''
         Executes hyperparameter optimization using the specified algorithm.
@@ -87,7 +126,9 @@ class Optimizer(problem.PM_miner_problem):
         **params : dict, optional
             Additional keyword arguments representing the hyperparameters to be passed to the algorithm class.
         '''
-        self.algorithm = algorithm_class(problem=self, **params)
+
+        self.algorithm = algorithm_class(problem=self.problem, **params)
+            
         self.algorithm.observable.register(observer=WriteFrontToFileObserver(os.path.join(self.out_folder, "FRONTS")))
         self.algorithm.run()
         self.result = self.algorithm.result()
@@ -152,7 +193,7 @@ class Optimizer(problem.PM_miner_problem):
             The path of the file where the plot will be saved.
         '''
         utils.plot_pareto_front(self.result,
-                                axis_labels=self.metrics_obj.get_labels(),
+                                axis_labels=config.metrics_mapping[self.metrics_name].get_labels(),
                                 title = title,
                                 filename=filename)
 
@@ -169,6 +210,22 @@ class Optimizer(problem.PM_miner_problem):
         for sol in front:
             petri_nets_from_pareto_sols.append(self.get_petri_net(sol))
         return petri_nets_from_pareto_sols
+    
+    def _create_petri_net_sol(self, params):
+        '''
+        Auxiliary function to manage the petri net generation, as its particularities depend of the selected miner.
+        Currently only inductive and heuristic miners are suported.
+        '''
+        
+        if self.miner_name == 'heuristic':
+            petri, initial_marking, final_marking = heuristics_miner.apply(self.log, parameters= params)
+        elif self.miner_name == 'inductive':
+            inductive_variant = inductive_miner.Variants.IMf if params["noise_threshold"] > 0 else inductive_miner.Variants.IM
+            params["multi_processing"] = True if params["multi_processing"] > 0.5 else False
+            params["disable_fallthroughs"] = True if params["disable_fallthroughs"] > 0.5 else False
+            process_tree = inductive_miner.apply(self.log, variant = inductive_variant,  parameters= params )
+            petri, initial_marking, final_marking = convert_to_petri_net(process_tree)    
+        return petri, initial_marking, final_marking
 
     
 ## Testing
@@ -187,7 +244,7 @@ if __name__ == "__main__":
     log = xes_importer.apply('event_logs/Closed/BPI_Challenge_2013_closed_problems.xes')
     metrics_obj = metrics.Basic_Metrics()
 
-    opt = Optimizer(heuristics_miner, log, metrics_obj)
+    opt = Optimizer(heuristics_miner, log, metrics_obj, '/home/ruben/Escritorio/Proyectos/pm_py/src')
 
     nsgaii_params = {'population_size': 100,
                      'offspring_population_size': 100,
