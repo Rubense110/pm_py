@@ -5,6 +5,8 @@ from typing import List
 import sys
 import os
 from contextlib import contextmanager
+import networkx as nx
+from scipy.spatial.distance import euclidean
 
 def calculate_pareto_front(solutions : List[FloatSolution]):
     front = []
@@ -54,16 +56,37 @@ def plot_pareto_front(solutions : List[FloatSolution], axis_labels, title, filen
     plt.grid()
     plt.savefig(filename)
 
+def petri_net_to_graph(petri_net):
+    """
+    Convierte una Red de Petri de PM4Py en un grafo dirigido de NetworkX.
+    """
+    G = nx.DiGraph()
+    
+    for place in petri_net.places:
+        G.add_node(place.name, type='place')
+    
+    for transition in petri_net.transitions:
+        if transition.label is not None:  # Solo agregamos transiciones etiquetadas
+            G.add_node(transition.name, type='transition')
+
+    for arc in petri_net.arcs:
+        G.add_edge(arc.source.name, arc.target.name)
+    
+    return G
+
 
 if __name__ == "__main__":
+    import pandas as pd
     ## TESTING
 
-    import pandas as pd
-    opt_sols_data = pd.read_csv('out/[2024_09_14 - 13:31:38]-BPI_Challenge_2013_closed_problems.xes-NSGA-II/results_objectives.csv')
-    #pareto_front = calculate_pareto_front(opt_sols_data.values.tolist())
-    #print(pareto_front)
-    #for i in pareto_front:
-    #    print(i)
-    labels = ['n_places', 'n_arcs', 'n_transitions', 'cycl_complx', 'ratio', 'joins', 'splits']
-    plot_pareto_front(opt_sols_data.values.tolist(), labels, title= "pareto", filename='pareto')
+    def test_pareto():
+        opt_sols_data = pd.read_csv('out/[2024_09_14 - 13:31:38]-BPI_Challenge_2013_closed_problems.xes-NSGA-II/results_objectives.csv')
+        #pareto_front = calculate_pareto_front(opt_sols_data.values.tolist())
+        #print(pareto_front)
+        #for i in pareto_front:
+        #    print(i)
+        labels = ['n_places', 'n_arcs', 'n_transitions', 'cycl_complx', 'ratio', 'joins', 'splits']
+        plot_pareto_front(opt_sols_data.values.tolist(), labels, title= "pareto", filename='pareto')
 
+    #def compare_test():
+        

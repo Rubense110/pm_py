@@ -3,6 +3,7 @@ import parameters
 import utils
 from problem import PMProblem
 import config
+import psutil
 
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
@@ -91,21 +92,12 @@ class Optimizer():
             print("     objectives:",j.objectives.tolist(),"\n")
         print("##############")
 
-    def discover_parallel(self):
+    def discover_parallel(self, params):
         '''
         Executes parallel hyperparameter optimization
         '''
 
-        self.algorithm = NSGAII(
-            population_evaluator=MultiprocessEvaluator(8),
-            problem=self.problem,
-            population_size=100,
-            offspring_population_size=100,
-            mutation=PolynomialMutation(probability=0.17, distribution_index=20),
-            crossover=SBXCrossover(probability=1.0, distribution_index=20),
-            termination_criterion=StoppingByEvaluations(max_evaluations=1000),
-        )
-            
+        self.algorithm = NSGAII(**params)
         self.algorithm.observable.register(observer=WriteFrontToFileObserver(os.path.join(self.out_folder, "FRONTS")))
         self.algorithm.run()
         self.result = self.algorithm.result()

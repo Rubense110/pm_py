@@ -12,6 +12,8 @@ import time
 import os
 import pandas as pd
 import importlib.util
+import sqlite3
+import json
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -97,7 +99,7 @@ class ProcessMiner:
                 dicc[attr_name] = attr_value
         return dicc
     
-    def save_petri_nets(self):
+    def save_petri_nets_imgs(self):
         """
         Saves Petri nets for each Pareto optimal solution.
         """
@@ -106,6 +108,55 @@ class ProcessMiner:
         for index, petri in enumerate(self.opt.get_pareto_front_petri_nets()):
             gviz = pn_visualizer.apply(petri[0], petri[1], petri[2])
             pn_visualizer.save(gviz, f'{self.outpath}/petri_pareto_{index}.png')
+
+    def save_petri_nets_db(self):
+        """
+        Saves the discovered petri nets in an sqlite database, all petris will be stored associated
+        with the execution that produced them with all relevant information.
+        """
+
+        conn = sqlite3.connect("data/petris_db.sqlite3")
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS executions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                optimizer TEXT,
+                miner TEXT,
+                event_log TEXT,
+                metrics TEXT
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS petri_nets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                execution_id INTEGER,
+                places TEXT,
+                transitions TEXT,
+                arcs TEXT,
+                FOREIGN KEY (execution_id) REFERENCES executions(id)
+            )
+        """)
+         
+        cursor.execute("INSERT INTO executions (optimizer, miner, event_log, metrics) VALUES (?, ?, ?, ?)",
+                    (self.opt_type, self.miner_name, self.log_name, self.metrics_name))
+        
+        self.execution_id = cursor.lastrowid
+
+        for petri in self.opt.get_pareto_front_petri_nets():
+            petri_net = petri[0]
+
+            places = json.dumps([str(place) for place in petri_net.places])
+            transitions = json.dumps([str(t) for t in petri_net.transitions]) 
+            arcs = arcs = json.dumps([str(arc) for arc in petri_net.arcs])
+
+
+            cursor.execute("INSERT INTO petri_nets (execution_id, places, transitions, arcs) VALUES (?, ?, ?, ?)",
+                        (self.execution_id, places, transitions, arcs))
+            
+        conn.commit()
+        conn.close()
 
     def save_pareto_front(self):
         """
@@ -134,8 +185,19 @@ class ProcessMiner:
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
 
+    def compare_petris(self):
+        pass
 
-    def discover(self, algorithm_name, store=True, parallel =False, **params):
+    def parallel_discover(self, store=True, **params):
+        self.opt.discover_parallel(params = params)
+        self.opt_type = 'NSGAII'
+        self.end_time = time.time()
+        self.params = {'placeholder':'placeholder'}
+        self.__log()
+        if store:
+            self.store()
+
+    def discover(self, algorithm_name, store=True, **params):
         '''
         Performs the hiperparameter optimization of the miner specified when instanciating
         the class using the algorithm class and its hiperparameters entered as attributes.
@@ -156,22 +218,24 @@ class ProcessMiner:
             return ValueError(f"Optmizador '{algorithm_name}' no está soportado. Los optmizadores disponibles son: {list(self.available_opts.keys())}")
         else:
             algorithm_class = self.available_opts[algorithm_name]
-
+            
+        self.opt_type = algorithm_name
         self.params = params
-
-        if parallel:
-            self.opt.discover_parallel()
-        else:
-            self.opt.discover(algorithm_class=algorithm_class, **params)
+        self.opt.discover(algorithm_class=algorithm_class, **params)
 
         self.opt_type = algorithm_class.__name__
         self.end_time = time.time()
         self.__log()
+        
         if store:
-            self.save_petri_nets()
-            self.save_pareto_front()
-            self.save_csvs()
+            self.store()
+            
 
+    def store(self):
+        self.save_petri_nets_imgs()
+        self.save_petri_nets_db()
+        self.save_pareto_front()
+        self.save_csvs()
     
     def set_log_file(self, logpath):
         '''
