@@ -60,6 +60,7 @@ def parallel_nsgaii(log):
     
     p_miner.parallel_discover(**parallel_params)
     p_miner.show_pareto_iterations()
+    p_miner.save_petris_graphs()
 
     print(p_miner.end_time - p_miner.star_time)
 

@@ -1,6 +1,7 @@
 import optimize
 import parameters
 import config
+import utils
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal_fixed import NSGAIII
@@ -14,7 +15,6 @@ import pandas as pd
 import importlib.util
 import sqlite3
 import json
-
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import common
@@ -115,7 +115,7 @@ class ProcessMiner:
         with the execution that produced them with all relevant information.
         """
 
-        conn = sqlite3.connect("data/petris_db.sqlite3")
+        conn = sqlite3.connect(common.DB_PATH)
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -184,9 +184,12 @@ class ProcessMiner:
             log.write(metrics_labels + "\n")
             for sol in self.opt.get_result():
                 log.write(f'{",".join(map(str, sol.objectives))}\n')
-
-    def compare_petris(self):
-        pass
+    
+    def save_petris_graphs(self):
+        graphs = utils.load_petris_as_graphs(execution_id=self.execution_id)
+        os.makedirs(f'{self.outpath}/graphs', exist_ok=True)
+        for index, graph in enumerate(graphs):
+            utils.plot_petri_graph(graph, filename=f'{self.outpath}/graphs/{index}.png')
 
     def parallel_discover(self, store=True, **params):
         self.opt.discover_parallel(params = params)
@@ -261,9 +264,6 @@ class ProcessMiner:
                 unique_lines = sorted(set(map(str.strip, lines)))
                 unique_count = len(unique_lines)
                 print(f"{file}: {unique_count}")
-
-
-
         
 ## TESTING
 if __name__ == "__main__":
@@ -278,4 +278,4 @@ if __name__ == "__main__":
     
     p_miner.discover(algorithm_name='NSGAII', **config.nsgaii_params)
     p_miner.show_pareto_iterations()
-    
+    p_miner.save_petris_graphs()

@@ -5,6 +5,7 @@ ABSPATH = os.path.abspath('.')
 
 LOGS_PATH = os.path.join(ABSPATH, 'event_logs')
 CSV_PATH = os.path.join(ABSPATH, 'csv_data')
+DB_PATH = os.path.join(ABSPATH, 'data', 'petris_db.sqlite3')
 
 def generate_logs_dict(logs_path=LOGS_PATH, verbose = False):
     """
