@@ -190,6 +190,8 @@ class ProcessMiner:
         os.makedirs(f'{self.outpath}/graphs', exist_ok=True)
         for index, graph in enumerate(graphs):
             utils.plot_petri_graph(graph, filename=f'{self.outpath}/graphs/{index}.png')
+        utils.plot_petri_distances(filename=f'{self.outpath}/graphs/adj_spectral_heatmap.png', 
+                                   petri_graphs=graphs)
 
     def parallel_discover(self, store=True, **params):
         self.opt.discover_parallel(params = params)
