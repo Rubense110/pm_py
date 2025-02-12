@@ -149,7 +149,7 @@ class ProcessMiner:
 
             places = json.dumps([str(place) for place in petri_net.places])
             transitions = json.dumps([str(t) for t in petri_net.transitions]) 
-            arcs = arcs = json.dumps([str(arc) for arc in petri_net.arcs])
+            arcs = json.dumps([str(arc) for arc in petri_net.arcs])
 
 
             cursor.execute("INSERT INTO petri_nets (execution_id, places, transitions, arcs) VALUES (?, ?, ?, ?)",
@@ -188,10 +188,14 @@ class ProcessMiner:
     def save_petris_graphs(self):
         graphs = utils.load_petris_as_graphs(execution_id=self.execution_id)
         os.makedirs(f'{self.outpath}/graphs', exist_ok=True)
+        os.makedirs(f'{self.outpath}/graphs/comparisons_matrix', exist_ok=True)
         for index, graph in enumerate(graphs):
             utils.plot_petri_graph(graph, filename=f'{self.outpath}/graphs/{index}.png')
+
         utils.plot_petri_distances(filename=f'{self.outpath}/graphs/adj_spectral_heatmap.png', 
                                    petri_graphs=graphs)
+        #utils.compare_multiple_petri_nets(output_dir=f'{self.outpath}/graphs/comparisons_matrix',
+        #                                petri_graphs=graphs)
 
     def parallel_discover(self, store=True, **params):
         self.opt.discover_parallel(params = params)
@@ -235,7 +239,6 @@ class ProcessMiner:
         if store:
             self.store()
             
-
     def store(self):
         self.save_petri_nets_imgs()
         self.save_petri_nets_db()

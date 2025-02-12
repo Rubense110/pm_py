@@ -1,0 +1,13 @@
+
+    🔹 Nodos exclusivos de A: {'(hid_2, None)'}
+    🔹 Nodos exclusivos de B: {"(Queued, 'Queued')", '(hid_6, None)', '(hid_3, None)', 'pre_Completed', "(Completed, 'Completed')", '(hid_7, None)', 'intplace_Accepted', '(hid_5, None)'}
+    🔹 Nodos comunes: {'source0', 'sink0', 'pre_Accepted', "(Accepted, 'Accepted')"}
+
+    🔹 Aristas exclusivas de A: {('source0', '(hid_2, None)'), ('(hid_2, None)', 'pre_Accepted'), ("(Accepted, 'Accepted')", 'pre_Accepted')}
+    🔹 Aristas exclusivas de B: {('(hid_7, None)', 'pre_Completed'), ('(hid_5, None)', 'pre_Completed'), ("(Accepted, 'Accepted')", 'intplace_Accepted'), ("(Completed, 'Completed')", 'sink0'), ('pre_Completed', "(Completed, 'Completed')"), ('intplace_Accepted', '(hid_6, None)'), ('(hid_6, None)', 'pre_Accepted'), ('source0', '(hid_3, None)'), ('source0', '(hid_5, None)'), ('(hid_3, None)', 'pre_Accepted'), ('intplace_Accepted', '(hid_7, None)'), ("(Queued, 'Queued')", 'pre_Accepted'), ('source0', "(Queued, 'Queued')")}
+    🔹 Aristas comunes: {('pre_Accepted', "(Accepted, 'Accepted')")}
+
+    🔹 Caminos comunes: {('sink0',)}
+    🔹 Caminos exclusivos de A: set()
+    🔹 Caminos exclusivos de B: {('source0', '(hid_5, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0'), ('source0', "(Queued, 'Queued')", 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_7, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0'), ('source0', '(hid_3, None)', 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_7, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0')}
+    

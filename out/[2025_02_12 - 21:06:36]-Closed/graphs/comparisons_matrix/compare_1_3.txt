@@ -1,0 +1,13 @@
+
+    🔹 Nodos exclusivos de A: {'(hid_8, None)', '(hid_9, None)', '(hid_10, None)', 'pre_Queued'}
+    🔹 Nodos exclusivos de B: {'(hid_6, None)'}
+    🔹 Nodos comunes: {'source0', "(Queued, 'Queued')", 'pre_Accepted', 'sink0', 'pre_Completed', '(hid_3, None)', "(Completed, 'Completed')", "(Accepted, 'Accepted')", '(hid_7, None)', 'intplace_Accepted', '(hid_5, None)'}
+
+    🔹 Aristas exclusivas de A: {('source0', '(hid_7, None)'), ('intplace_Accepted', '(hid_10, None)'), ('intplace_Accepted', '(hid_8, None)'), ('(hid_9, None)', 'pre_Completed'), ('(hid_7, None)', 'pre_Queued'), ('pre_Queued', "(Queued, 'Queued')"), ('(hid_10, None)', 'pre_Queued'), ('(hid_8, None)', 'pre_Accepted'), ('intplace_Accepted', '(hid_9, None)')}
+    🔹 Aristas exclusivas de B: {('(hid_7, None)', 'pre_Completed'), ('intplace_Accepted', '(hid_6, None)'), ('(hid_6, None)', 'pre_Accepted'), ('intplace_Accepted', '(hid_7, None)'), ('source0', "(Queued, 'Queued')")}
+    🔹 Aristas comunes: {('pre_Accepted', "(Accepted, 'Accepted')"), ('(hid_5, None)', 'pre_Completed'), ("(Accepted, 'Accepted')", 'intplace_Accepted'), ("(Completed, 'Completed')", 'sink0'), ('pre_Completed', "(Completed, 'Completed')"), ('source0', '(hid_3, None)'), ('source0', '(hid_5, None)'), ('(hid_3, None)', 'pre_Accepted'), ("(Queued, 'Queued')", 'pre_Accepted')}
+
+    🔹 Caminos comunes: {('source0', '(hid_5, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0')}
+    🔹 Caminos exclusivos de A: {('source0', '(hid_7, None)', 'pre_Queued', "(Queued, 'Queued')", 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_9, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0'), ('source0', '(hid_3, None)', 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_9, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0')}
+    🔹 Caminos exclusivos de B: {('source0', "(Queued, 'Queued')", 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_7, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0'), ('source0', '(hid_3, None)', 'pre_Accepted', "(Accepted, 'Accepted')", 'intplace_Accepted', '(hid_7, None)', 'pre_Completed', "(Completed, 'Completed')", 'sink0')}
+    
