@@ -189,13 +189,16 @@ class ProcessMiner:
         graphs = utils.load_petris_as_graphs(execution_id=self.execution_id)
         os.makedirs(f'{self.outpath}/graphs', exist_ok=True)
         os.makedirs(f'{self.outpath}/graphs/comparisons_matrix', exist_ok=True)
+        os.makedirs(f'{self.outpath}/graphs/msc', exist_ok=True)
         for index, graph in enumerate(graphs):
             utils.plot_petri_graph(graph, filename=f'{self.outpath}/graphs/{index}.png')
 
         utils.plot_petri_distances(filename=f'{self.outpath}/graphs/adj_spectral_heatmap.png', 
                                    petri_graphs=graphs)
-        #utils.compare_multiple_petri_nets(output_dir=f'{self.outpath}/graphs/comparisons_matrix',
-        #                                petri_graphs=graphs)
+        utils.compare_multiple_petri_nets(output_dir=f'{self.outpath}/graphs/comparisons_matrix',
+                                        petri_graphs=graphs)
+        utils.analyze_similar_petrinets_MSC(output_dir=f'{self.outpath}/graphs/msc',
+                                            petri_graphs=graphs)
 
     def parallel_discover(self, store=True, **params):
         self.opt.discover_parallel(params = params)

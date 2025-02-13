@@ -9,6 +9,8 @@ import itertools
 import os
 import sqlite3
 import re
+from itertools import combinations
+
 import json
 from contextlib import contextmanager
 import networkx as nx
@@ -368,7 +370,7 @@ def preprocess_petri_net(G):
     G = G.copy()  # Trabajamos sobre una copia para no modificar el original
     print(G.nodes())
     
-    silent_transitions = [node for node in G.nodes if isinstance(node, tuple) and node[1] is None]
+    silent_transitions = [node for node in G.nodes if 'hid' in node]
 
     for st in silent_transitions:
         predecessors = list(G.predecessors(st))
@@ -382,7 +384,82 @@ def preprocess_petri_net(G):
         # Eliminar la transición silenciosa
         G.remove_node(st)
 
+    print('silent_transitions', silent_transitions)
     return G
+
+def find_max_common_subgraph(G1, G2):
+    """
+    Encuentra el mayor subgrafo común entre dos grafos dirigidos.
+    """
+    matcher = nx.algorithms.isomorphism.DiGraphMatcher(G1, G2)
+    max_common_subgraph = None
+    max_size = 0
+
+    for subgraph in matcher.subgraph_isomorphisms_iter():
+        subgraph_size = len(subgraph)
+        if subgraph_size > max_size:
+            max_size = subgraph_size
+            max_common_subgraph = subgraph
+
+    return max_common_subgraph
+
+def analyze_similar_petrinets_MSC(output_dir, petri_graphs, top_n=4):
+    """
+    Analiza una lista de redes de Petri y devuelve los top_n pares con menor adjacency spectral distance,
+    junto con su mayor subgrafo común.
+    
+    :param petri_nets: Lista de redes de Petri (grafos dirigidos).
+    :param top_n: Número de pares a seleccionar (por defecto 4).
+    :return: Lista de tuplas con los pares seleccionados, su distancia y su mayor subgrafo común.
+    """
+    # Paso 1: Calcular adjacency spectral distance para todos los pares
+    distances = []
+    for G1, G2 in combinations(petri_graphs, 2):
+        distance = adjacency_spectral_distance(G1, G2)
+        distances.append((G1, G2, distance))
+
+    # Paso 2: Ordenar los pares por distancia (de menor a mayor)
+    distances.sort(key=lambda x: x[2])
+
+    # Paso 3: Seleccionar los top_n pares con menor distancia
+    selected_pairs = distances[:top_n]
+
+    # Paso 4: Calcular el mayor subgrafo común para los pares seleccionados
+    results = []
+    for idx, (G1, G2, distance)  in enumerate(selected_pairs):
+        mcs = find_max_common_subgraph(G1, G2)
+        if mcs:
+            common_graph = nx.DiGraph()
+            for node in mcs.keys():
+                common_graph.add_node(node)
+            for u, v in G1.edges():
+                if u in mcs and v in mcs:
+                    common_graph.add_edge(u, v)
+            filename = os.path.join(output_dir, f"msc_{idx}_{len(results)}.png")
+            draw_graph(common_graph, filename, title=f"MSC (Distancia = {distance:.2f})")
+            results.append((G1, G2, distance, mcs))
+        else: 
+            print(f"No se encontró un subgrafo común para el par con distancia {distance}.")
+
+    for G1, G2, distance, mcs in results:
+        print(f"Par de redes con distancia {distance}:")
+        print(f"Mayor subgrafo común: {mcs}")
+        print("---")
+
+    return results
+
+
+# Función para dibujar un grafo
+def draw_graph(graph, filename, title="Grafo"):
+    """
+    Dibuja un grafo dirigido utilizando matplotlib.
+    """
+    pos = graphviz_layout(graph, prog="dot", args="-Grankdir=LR -Gnodesep=0.5 -Granksep=1") 
+    plt.figure(figsize=(10, 6))
+    nx.draw(graph, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500, font_size=10)
+    plt.title(title)
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+
 
 if __name__ == "__main__":
     import pandas as pd
