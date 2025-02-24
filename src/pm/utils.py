@@ -10,6 +10,7 @@ import os
 import sqlite3
 import re
 from itertools import combinations
+from pyvis.network import Network
 
 import json
 from contextlib import contextmanager
@@ -160,7 +161,7 @@ def plot_petri_graph(graph, filename):
 
     # Asignamos etiquetas vacías a nodos especiales
     labels = {node: " " if str(node).startswith(("pre_", "intplace_")) else labels.get(node, str(node)) for node in graph.nodes()}
-    print("labels: ", labels)
+    #print("labels: ", labels)
     # Filtrar transiciones con etiquetas "None"
     transitions_none = [
         node for node, data in graph.nodes(data=True)
@@ -189,6 +190,59 @@ def plot_petri_graph(graph, filename):
     petri_index = 'p'
     plt.title(f"Red de Petri {petri_index}")
     plt.savefig(filename, format="png")
+
+
+def plot_petri_graph_pyvis(graph, filename):
+    """
+    Plots a Petri net using pyvis.
+    """
+    net = Network(notebook=True, directed=True)
+    
+    # Definir nodos de lugares y transiciones
+    places = [node for node, data in graph.nodes(data=True) if data.get("type") == "place"]
+    transitions = [node for node, data in graph.nodes(data=True) if data.get("type") == "transition"]
+
+    labels = {}
+    for node, data in graph.nodes(data=True):
+        if data.get("type") == "transition":
+            node_data = node
+            if isinstance(node_data, tuple):
+                labels[node] = node_data[1] if len(node_data) > 1 else str(node_data[0])
+            else:
+                labels[node] = str(node_data)
+        else:
+            labels[node] = str(node)
+
+    # Asignamos etiquetas vacías a nodos especiales
+    labels = {node: " " if str(node).startswith(("pre_", "intplace_", "splace_")) else labels.get(node, str(node)) for node in graph.nodes()}
+
+    transitions_none = [
+        node for node, data in graph.nodes(data=True)
+        if data.get("type") == "transition" and re.match(r"^hid_\d+$", labels[node])
+    ]
+
+    transitions_normal = [
+        node for node in transitions
+        if node != "None" and labels[node] != "None"
+    ]
+
+    # Agregar nodos al grafo interactivo
+    for node in places:
+        net.add_node(node, label=labels[node], shape="circle", color="lightblue", size=30)
+
+    for node in transitions_normal:
+        net.add_node(node, label=labels[node], shape="square", color="lightyellow", size=30)
+
+    for node in transitions_none:
+        net.add_node(node, label=labels[node], shape="square", color="black", size=30)
+
+    # Agregar aristas
+    for source, target in graph.edges():
+        net.add_edge(source, target, color="gray", arrows="to")
+
+    # Guardar la visualización en un archivo HTML
+    net.show(filename)
+
 
 def plot_petri_graph_(graph, filename):
     """
@@ -368,7 +422,7 @@ def preprocess_petri_net(G):
     Esto facilita las cosas al comparar las redes.
     """
     G = G.copy()  # Trabajamos sobre una copia para no modificar el original
-    print(G.nodes())
+    #print(G.nodes())
     
     silent_transitions = [node for node in G.nodes if 'hid' in node]
 
@@ -384,7 +438,7 @@ def preprocess_petri_net(G):
         # Eliminar la transición silenciosa
         G.remove_node(st)
 
-    print('silent_transitions', silent_transitions)
+    #print('silent_transitions', silent_transitions)
     return G
 
 def find_max_common_subgraph(G1, G2):

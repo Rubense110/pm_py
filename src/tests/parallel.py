@@ -65,7 +65,7 @@ def parallel_nsgaii(log):
     print(p_miner.end_time - p_miner.star_time)
 
 if __name__ == "__main__":
-    log = common.log_closed
+    log = common.log_open
 
     #run_process_mining_dask()
     parallel_nsgaii(log)
