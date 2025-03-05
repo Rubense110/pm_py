@@ -43,9 +43,12 @@ def run_process_mining_dask():
 
 def parallel_nsgaii(log):
 
+    constraints_string = "(x1 > 1 ∨ x2 < 2) ∧ (x1 + x2 ≤ 10)"
+
     p_miner = ProcessMiner(miner_name='heuristic',
                            metrics='quality',
-                           log=log)
+                           log=log, 
+                           constraints_string=constraints_string)
     cpu_cores= psutil.cpu_count(logical=False)
 
     parallel_params = {

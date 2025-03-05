@@ -38,7 +38,7 @@ class Optimizer():
     
     '''
 
-    def __init__(self, miner_name, log_path, metrics_name, out_folder):
+    def __init__(self, miner_name, log_path, metrics_name, out_folder, constraints_list=[]):
         
         self.miner_name = miner_name
         self.log_path = log_path
@@ -47,12 +47,14 @@ class Optimizer():
         self.out_folder = out_folder
         self.metrics_name = metrics_name
         self.log = xes_importer.apply(log_path)
+        self.constraints_list = constraints_list
 
         self.problem=PMProblem(
             miner_name= miner_name,
             log_path=log_path,
             metrics_name=metrics_name,
             parameters_info=self.parameters_info,
+            constraints_list=self.constraints_list,
         )
     
     def __get_parameters(self, miner, log):

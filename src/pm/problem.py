@@ -2,6 +2,7 @@ from metrics import Metrics
 from parameters import BaseParametersConfig
 import config
 import threading
+import re
 
 import random
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
@@ -35,17 +36,19 @@ class PMProblem(FloatProblem):
 
     '''
 
-    def __init__(self, miner_name, log_path, metrics_name, parameters_info: BaseParametersConfig):
+    def __init__(self, miner_name, log_path, metrics_name, parameters_info: BaseParametersConfig, constraints_list=[]):
         super(PMProblem, self).__init__()
 
         self.miner = miner_name         # pm4py miner e.g. heuristic_miner
         self.log = xes_importer.apply(log_path)          # XES log (already loaded by pm4py)
         self.metrics_obj = self.__get_metrics_type(metrics_name)  # How to calculate fitness
         self.parameters_info = parameters_info   # Miner pararameters (selected automatically)
+        self.constraints_list = constraints_list
+        print("---constraints--- \n", self.constraints_list)
 
         self.n_of_objectives = self.metrics_obj.get_n_of_metrics()
         self.number_of_variables = self.__get_n_genes()
-        self.number_of_constraints = 0
+        self.n_of_constraints = self.number_of_constraints()
 
         self.lower_bound, self.upper_bound = self.__get_bounds()
         self.obj_labels = self.metrics_obj.get_labels()
@@ -73,8 +76,31 @@ class PMProblem(FloatProblem):
         petri, im, fm = self._create_petri_net_sol(params)
         solution.objectives = self.metrics_obj.get_metrics_array(petri, im, fm, self.log)
         solution.n_of_objectives = self.n_of_objectives
+
+        if len(self.constraints_list) > 0:
+            print("\n---PROBLEM---")
+            print("constraints: ", self.constraints_list)
+            self._evaluate_constraints(solution)
         
-        return 'solution'
+        return solution
+    
+    def _evaluate_constraints(self, solution:FloatSolution):
+        constrs = [0.0 for _ in range(self.number_of_constraints())]
+        x_variables = {f'x{i+1}': solution.variables[i] for i in range(len(solution.variables))}
+        constraint_expressions = self._generate_constraints_expressions()
+
+        print("x_variables", x_variables)
+        print("constraint_expressions", constraint_expressions)
+        for i, expr in enumerate(constraint_expressions):
+            print(i, expr)
+            print(solution.constraints)
+            constrs[i] = eval(expr, {}, x_variables) 
+
+            print(f"Restricción {i+1}: {expr} → {eval(expr, {}, x_variables)}")
+        
+        solution.constraints = constrs
+
+
     
     def _create_petri_net_sol(self, params):
         '''
@@ -96,7 +122,7 @@ class PMProblem(FloatProblem):
         Specifies how solutions are created, the actual process depends of the parameter type specified
         in the parameters module.
         '''
-        new_solution = FloatSolution(number_of_constraints=self.number_of_constraints,
+        new_solution = FloatSolution(number_of_constraints=self.n_of_constraints,
                                      number_of_objectives=self.n_of_objectives,
                                      lower_bound = self.lower_bound,
                                      upper_bound = self.upper_bound)   
@@ -144,10 +170,66 @@ class PMProblem(FloatProblem):
         return 'Custom Process Mining Problem'
     
     def number_of_constraints(self) -> int:
-        return self.number_of_constraints
+        if self.constraints_list:
+            number_of_constraints = len(self.constraints_list)
+        else: 
+            number_of_constraints = 0
+
+        return number_of_constraints
     
     def number_of_variables(self) -> int:
         return self.number_of_variables
     
     def number_of_objectives(self) -> int:
         return self.n_of_objectives
+    
+
+    def _generate_constraints_expressions(self):
+        """Convierte restricciones en formato jMetalPy (≤ 0)"""
+        transformed = []
+        for constraint in self.constraints_list:
+            left, op, right = re.split(r'\s*(=|<|≤|>|≥)\s*', constraint.strip())
+            left, right = left.strip(), right.strip()
+
+            if op == '>':  
+                transformed.append(f"({right} - {left})")  
+            elif op == '≥':  
+                transformed.append(f"({right} - {left})")  
+            elif op == '<':  
+                transformed.append(f"({left} - {right})")  
+            elif op == '≤':  
+                transformed.append(f"({left} - {right})")  
+            elif op == '=':  
+                transformed.append(f"abs({left} - {right})")  
+
+        return transformed
+
+
+def transform_to_jmetal(constraints):
+    transformed = []
+    
+    for constraint in constraints:
+        left, op, right = re.split(r'\s*(=|<|≤|>|≥)\s*', constraint.strip())
+        left, right = left.strip(), right.strip()
+
+        if op == '>':  
+            transformed.append(f"({right} - {left})")  # x > 1 → 1 - x
+        elif op == '>=':  
+            transformed.append(f"({right} - {left})")  # x ≥ 1 → 1 - x
+        elif op == '<':  
+            transformed.append(f"({left} - {right})")  # x < 2 → x - 2
+        elif op == '<=':  
+            transformed.append(f"({left} - {right})")  # x ≤ 10 → x - 10
+        elif op == '=':  
+            transformed.append(f"abs({left} - {right})")  # x = y → abs(x - y)
+    
+    return transformed
+
+def generate_constraints_code(constraints):
+    transformed = transform_to_jmetal(constraints)
+    
+    code_lines = []
+    for i, expr in enumerate(transformed):
+        code_lines.append(f"solution.constraints[{i}] = {expr}")
+    
+    return "\n".join(code_lines)

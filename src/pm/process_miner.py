@@ -2,6 +2,7 @@ import optimize
 import parameters
 import config
 import utils
+from constraints_parser import ConstraintParser
 
 from jmetal.algorithm.multiobjective.nsgaii import NSGAII
 from jmetal_fixed import NSGAIII
@@ -51,21 +52,39 @@ class ProcessMiner:
                       'NSGAII-D': DistributedNSGAII}
 
 
-    def __init__(self, miner_name, metrics,  log:tuple[str, str], outpath=None):
+    def __init__(self, miner_name, metrics,  log:tuple[str, str], outpath=None, constraints_string=None):
 
         self.miner_name = miner_name
         self.metrics_name = metrics
         self.log_name = log[0]
         self.log_path = log[1]
         self.local_time = time.strftime("[%Y_%m_%d - %H:%M:%S]", time.localtime())
+        self.constraints_list = self._parse_constraints(constraints_string)
 
         if outpath == None:
             self.outpath = f'{self.out_folder}/{self.local_time}-{self.log_name}'
         else:
             self.outpath = f'{self.out_folder}/{outpath}'
 
-        self.opt = optimize.Optimizer(self.miner_name, self.log_path, self.metrics_name, self.outpath)
+        self.opt = optimize.Optimizer(self.miner_name, self.log_path, self.metrics_name, 
+                                      self.outpath, self.constraints_list)
         self.star_time = time.time()
+
+    def _parse_constraints(self, constraints_string):
+        if constraints_string:
+            parser = ConstraintParser(constraints_string)
+            parsed_constraints = parser.parse()
+            constraints_list = parser.extract_constraints()
+
+            print("---PARSE---")
+            print("Expresión traducida a Python:", parsed_constraints)
+            print("Restricciones individuales:", constraints_list)
+
+        else:
+            constraints_list=[]
+        
+        return constraints_list
+
     
     def __log(self):
         '''
